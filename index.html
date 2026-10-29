@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v53</title>
+  <title>Cajeros v54</title>
   <meta name="theme-color" content="#1e3a5f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2998,17 +2998,27 @@
     }
 
     // Cuántas diferencias hay entre lo que ve el admin y la versión oficial
-    function pendingCount() {
-      let n = 0;
+    // Detalle de lo que difiere de la versión oficial: turnos, colores y feriados
+    function pendingDetail() {
+      let turnos = 0;
       people.forEach((p, pi) => {
         for (let d = 0; d < DAYS; d++) {
-          if ((p.codes[d] || "") !== ((ORIGINAL_CODES[pi] || [])[d] || "")) n++;
+          if ((p.codes[d] || "") !== ((ORIGINAL_CODES[pi] || [])[d] || "")) turnos++;
         }
       });
       const fa = feriados.slice().sort((a, b) => a - b).join(",");
       const fb = (officialFeriados || []).slice().sort((a, b) => a - b).join(",");
-      if (fa !== fb) n++;
-      return n + Object.keys(colorOverrides).length;
+      // Solo cuentan los colores que de verdad son distintos a los oficiales del mes
+      const pub = (MES_DATA[currentMes] && MES_DATA[currentMes].colores) || {};
+      const colores = Object.keys(colorOverrides).filter(k => {
+        const off = String(pub[k] || BASE_COLORS[k] || "").toUpperCase();
+        return String(colorOverrides[k] || "").toUpperCase() !== off;
+      });
+      return { turnos, feriados: fa !== fb, colores };
+    }
+    function pendingCount() {
+      const d = pendingDetail();
+      return d.turnos + (d.feriados ? 1 : 0) + d.colores.length;
     }
     function updatePublishBtn() {
       const btn = document.getElementById("btnPublish");
@@ -3021,8 +3031,13 @@
     document.getElementById("btnPublish").addEventListener("click", async () => {
       if (!fbReady || currentUser !== "ADMIN") return;
       const n = pendingCount();
+      const det = pendingDetail();
+      const partes = [];
+      if (det.turnos) partes.push("• " + det.turnos + " turno" + (det.turnos === 1 ? "" : "s") + " cambiado" + (det.turnos === 1 ? "" : "s"));
+      if (det.colores.length) partes.push("• Colores: " + det.colores.join(", "));
+      if (det.feriados) partes.push("• Feriados: " + (feriados.length ? feriados.map(x => x + 1).join(", ") : "ninguno"));
       const msg = n
-        ? "¿Publicar " + MES.nombre + " " + MES.y + " para todos? (" + n + " cambio" + (n === 1 ? "" : "s") + ")"
+        ? "¿Publicar " + MES.nombre + " " + MES.y + " para todos?\n\n" + partes.join("\n")
         : "No hay cambios respecto a la versión oficial. ¿Publicar " + MES.nombre + " igual?";
       if (!confirm(msg)) return;
       const btn = document.getElementById("btnPublish");

@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v47</title>
+  <title>Cajeros v49</title>
   <meta name="theme-color" content="#1e3a5f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1295,7 +1295,7 @@
     @media (orientation: landscape) {
       .col-btn { width: 32px; height: 32px; padding: 0; border-radius: 50%; }
     }
-    #colorCodes .shift-option, #colorPaletteGrid .palette-color { outline: 1px solid rgba(0,0,0,.12); outline-offset: -1px; }
+    #colorCodes .shift-option { outline: 1px solid rgba(0,0,0,.12); outline-offset: -1px; }
     #colorCodes .shift-option.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.4); }
     .wa-btn { background: #25D366; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
     .wa-btn:hover { background: #1ebe5a; color: #fff; }
@@ -1504,17 +1504,16 @@
         <h3>Colores de los turnos</h3>
         <button class="close-btn" id="closeColors" title="Cerrar">×</button>
       </div>
-      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 10px">Elegí un turno y después su color. Para que lo vean todos, exportá el JSON y subilo a GitHub.</p>
+      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 10px">Tocá un turno y elegí su color. Para que lo vean todos, exportá el JSON y subilo a GitHub.</p>
       <div class="shift-grid" id="colorCodes"></div>
       <div id="colorEditor" style="display:none;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:12px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span class="code-badge" id="colorCodeBadge" style="padding:4px 12px;border-radius:6px;font-weight:800;border:1px solid rgba(0,0,0,.15)">—</span>
           <span id="colorCodeHex" style="font-size:0.75rem;color:#64748b;font-weight:600"></span>
-          <label style="margin-left:auto;font-size:0.75rem;font-weight:700;color:#334155;display:flex;align-items:center;gap:6px">Otro
-            <input type="color" id="colorCustom" style="width:38px;height:30px;border:0;padding:0;background:none;cursor:pointer">
+          <label style="margin-left:auto;font-size:0.75rem;font-weight:700;color:#334155;display:flex;align-items:center;gap:6px">Cambiar color
+            <input type="color" id="colorCustom" style="width:56px;height:36px;border:1px solid #cbd5e1;border-radius:8px;padding:2px;background:#fff;cursor:pointer">
           </label>
         </div>
-        <div class="palette-grid" id="colorPaletteGrid"></div>
       </div>
       <div class="palette-actions">
         <button class="btn btn-clear" id="resetColor">Restablecer este</button>
@@ -2970,6 +2969,26 @@
       e.preventDefault();
       toggleDayFilter(Number(th.dataset.di));
     });
+    // Vista "por turno": deslizar hacia un costado vuelve a la grilla del mes
+    (function () {
+      const area = document.getElementById("daySplit");
+      let sx = null, sy = null, st = 0;
+      area.addEventListener("touchstart", (e) => {
+        if (selectedDay === null || e.touches.length !== 1) { sx = null; return; }
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now();
+      }, { passive: true });
+      area.addEventListener("touchend", (e) => {
+        if (sx === null || selectedDay === null) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - sx, dy = t.clientY - sy;
+        sx = null;
+        if (document.querySelector(".palette-overlay.open")) return;
+        if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.8 && Date.now() - st < 800) {
+          selectedDay = null;
+          refreshAfterEdit();
+        }
+      }, { passive: true });
+    })();
     document.getElementById("btnClearDay").addEventListener("click", () => {
       selectedDay = null;
       daySortByShift = true;
@@ -3373,7 +3392,14 @@
         const bg = colorMap[code] || "#e2e8f0";
         opt.style.background = bg;
         opt.style.color = getTextColor(bg);
-        opt.addEventListener("click", () => { colorEditCode = code; renderColorCodes(); renderColorEditor(); });
+        opt.addEventListener("click", () => {
+          colorEditCode = code;
+          renderColorCodes();
+          renderColorEditor();
+          // Abre directamente el selector de color del celular/PC
+          const inp = document.getElementById("colorCustom");
+          try { if (inp.showPicker) inp.showPicker(); else inp.click(); } catch (e) { try { inp.click(); } catch (e2) {} }
+        });
         grid.appendChild(opt);
       });
     }
@@ -3388,16 +3414,6 @@
       badge.style.color = getTextColor(cur);
       document.getElementById("colorCodeHex").textContent = cur + (colorOverrides[colorEditCode] ? " · cambiado" : "");
       document.getElementById("colorCustom").value = cur;
-      const pg = document.getElementById("colorPaletteGrid");
-      pg.innerHTML = "";
-      colorChoices().forEach(hex => {
-        const sw = document.createElement("div");
-        sw.className = "palette-color" + (hex === cur ? " selected" : "");
-        sw.style.background = hex;
-        sw.title = hex;
-        sw.addEventListener("click", () => setCodeColor(colorEditCode, hex));
-        pg.appendChild(sw);
-      });
     }
     function refreshColorsEverywhere() {
       renderGroups();

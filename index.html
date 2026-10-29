@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v64</title>
+  <title>Cajeros v66</title>
   <meta name="theme-color" content="#1e3a5f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2611,8 +2611,11 @@
       loadFeriados();
       renderDayHead();
       ORIGINAL_CODES = people.map(p => p.codes.slice());
-      if (SEED_BY_MES[key]) {
-        INITIAL_CODES = normalizePeople(SEED_BY_MES[key]).map(p => p.codes.slice());
+      // La semilla solo sirve como "inicial" si trae turnos (la de octubre es un molde vacío)
+      const seedIni = SEED_BY_MES[key];
+      const seedHasCodes = Array.isArray(seedIni) && seedIni.some(p => (p.codes || []).some(Boolean));
+      if (seedHasCodes) {
+        INITIAL_CODES = normalizePeople(seedIni).map(p => p.codes.slice());
       } else {
         // Mes sin semilla: la "inicial" publicada en Firebase, o la primera versión que vio este dispositivo
         if (data && Array.isArray(data.inicial) && data.inicial.length) {
@@ -3062,7 +3065,11 @@
       }
     });
 
+    // En modo CJ el JSON sale con los cambios de los cajeros (lo que se ve en pantalla);
+    // en cualquier otro modo, con la versión actual de este celular.
     function currentJson() {
+      const fromCj = viewMode === "cj";
+      if (fromCj) rebuildCj();
       return {
         mes: currentMes,
         codigos: ALL_SHIFT_CODES.slice(),
@@ -3073,7 +3080,7 @@
         people: people.map((p, pi) => {
           const notes = [];
           for (let d = 0; d < DAYS; d++) notes.push(getComment(pi, d) || "");
-          const row = { id: p.id, name: p.name, codes: p.codes.slice() };
+          const row = { id: p.id, name: p.name, codes: (fromCj ? (CJ_CODES[pi] || p.codes) : p.codes).slice() };
           if (notes.some(Boolean)) row.notes = notes;
           return row;
         })

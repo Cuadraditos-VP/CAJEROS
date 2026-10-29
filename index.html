@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v54</title>
+  <title>Cajeros v56</title>
   <meta name="theme-color" content="#1e3a5f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1450,7 +1450,7 @@
         <button type="button" id="btnExportJson" class="json-btn admin-only" title="Exportar JSON">↓ JSON</button>
         <button type="button" id="btnCopyJson" class="json-btn admin-only" title="Copiar JSON al portapapeles">⧉ Copiar</button>
         <button type="button" id="btnImportJson" class="json-btn admin-only" title="Importar JSON">↑ JSON</button>
-        <button type="button" id="btnPublish" class="json-btn admin-only fb-only publish-btn" title="Publicar para todos">⬆ Publicar</button>
+        <button type="button" id="btnPublish" class="json-btn admin-only fb-only publish-btn" title="Publicar colores y feriados para todos (los turnos nunca se publican desde acá)">⬆ Publicar</button>
         <input id="importJsonFile" type="file" accept="application/json,.json" hidden>
       </div>
     </header>
@@ -1560,8 +1560,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script>
     // ========== FIREBASE (programación oficial compartida, igual que en jefes) ==========
-    // Proyecto propio de cajeros (separado de jefes). Colecciones: "cajeros" (un documento por mes)
-    // y "cj_cajeros" (cambios de cada celular). Si Firebase no carga, la app funciona como antes.
+    // Proyecto propio de cajeros (separado de jefes). Colecciones:
+    //   "cajeros"    → un documento por mes SOLO con los colores y feriados que publica el admin (nunca turnos)
+    //   "cj_cajeros" → los cambios que cada cajero hace en su celular (solo los lee el admin)
+    // Los turnos oficiales vienen únicamente del HTML / JSON de GitHub. Si Firebase no carga, la app funciona igual.
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyDYijmzeeKObIRGbNkIsbsGzoonJilnBHc",
       authDomain: "programacioncajeros-a7420.firebaseapp.com",
@@ -1956,6 +1958,8 @@
         const raw = localStorage.getItem(feriadosKey(key));
         if (raw != null) return toIdx(JSON.parse(raw));
       } catch (e) {}
+      const fbc = loadFbCache(key);
+      if (fbc && Array.isArray(fbc.feriados)) return toIdx(fbc.feriados);
       const data = MES_DATA[key];
       if (data && Array.isArray(data.feriados)) return toIdx(data.feriados);
       return [];
@@ -2575,6 +2579,7 @@
         people = normalizePeople(SEED_BY_MES[key]);
       }
       setGroupsFor(key, data, people.length);
+      applyFbColors(key);
       loadFeriados();
       renderDayHead();
       ORIGINAL_CODES = people.map(p => p.codes.slice());
@@ -2682,8 +2687,6 @@
       const cands = candidateMeses();
       const results = await Promise.all(cands.map(k => fetchMes(k)));
       cands.forEach((k, i) => { if (results[i]) MES_DATA[k] = results[i]; });
-      // Lo último publicado en Firebase (guardado en el celular) manda sobre el JSON de GitHub
-      if (fbReady) cands.forEach(k => { const c = loadFbCache(k); if (c) MES_DATA[k] = c; });
       AVAILABLE_MESES = cands.filter(k => MES_DATA[k] || SEED_BY_MES[k]);
       if (!AVAILABLE_MESES.length) AVAILABLE_MESES = [FIRST_MES];
       let want = null;
@@ -2704,7 +2707,6 @@
     setInterval(() => {
       const openOverlay = document.querySelector(".palette-overlay.open, #loginOverlay.open");
       if (openOverlay) return; // no interrumpir si hay un modal abierto (editando un turno, login, etc.)
-      if (fbStarted && loadFbCache(currentMes)) return; // ese mes ya llega en vivo por Firebase
       loadSharedSchedule();
     }, AUTO_REFRESH_MS);
 
@@ -2797,82 +2799,44 @@
     function loadFbCache(key) {
       try {
         const d = JSON.parse(localStorage.getItem(fbCacheKey(key)) || "null");
-        return d && Array.isArray(d.people) && d.people.length ? d : null;
+        return d && ((d.colores && typeof d.colores === "object") || Array.isArray(d.feriados)) ? d : null;
       } catch (e) { return null; }
     }
     function saveFbCache(key, data) {
       try { localStorage.setItem(fbCacheKey(key), JSON.stringify(data)); } catch (e) {}
     }
-
-    // Vuelve a armar el mes que se está viendo con los datos oficiales (sin salir de la vista del día)
-    function reloadCurrentFromData(data) {
-      ALL_SHIFT_CODES = DEFAULT_SHIFT_CODES.slice();
-      applyCatalog(data);
-      people = normalizePeople(data.people);
-      setGroupsFor(currentMes, data, people.length);
-      loadNotesFromPeople(data.people);
-      ORIGINAL_CODES = people.map(p => p.codes.slice());
-      officialFeriados = normFeriados(data.feriados || []);
-      feriados = officialFeriados.slice();
-      if (!SEED_BY_MES[currentMes] && Array.isArray(data.inicial) && data.inicial.length) {
-        INITIAL_CODES = normalizePeople(data.inicial).map(p => p.codes.slice());
-      }
-      loadEdits();
-      resetPeopleFromOfficial();
-      renderDayHead();
-      renderGroups();
-      buildShiftGrid();
-      applyColors();
-      if (personOverlay.classList.contains("open") && currentCalPi !== null) openPersonCalendar(currentCalPi);
+    // Colores y feriados publicados por el admin para ese mes (lo único que llega de Firebase)
+    function applyFbColors(key) {
+      const c = loadFbCache(key);
+      if (!c) return;
+      if (c.colores) applyCatalog({ colores: c.colores });
+      if (Array.isArray(c.feriados)) officialFeriados = normFeriados(c.feriados);
     }
 
-    // Llega una versión oficial nueva de un mes (el admin tocó "Publicar").
-    // Igual que en jefes: se descartan las ediciones locales de ese mes y todos ven la versión del admin.
+    // Llegan colores/feriados nuevos publicados por el admin. Los turnos NO se tocan nunca.
     function applyOfficialUpdate(key, data) {
-      if (!data || !Array.isArray(data.people) || !data.people.length) return;
-      const days = mesInfo(key).days;
+      if (!data) return;
+      const hasCol = data.colores && typeof data.colores === "object";
+      const hasFer = Array.isArray(data.feriados);
+      if (!hasCol && !hasFer) return;
       const cached = loadFbCache(key);
       if (cached && cached.version && data.version && cached.version === data.version) return; // ya la tenía
-      // Versión oficial que este celular tenía hasta ahora (para saber qué cambió el admin)
-      const prevSrc = cached || MES_DATA[key] || (SEED_BY_MES[key] ? { people: SEED_BY_MES[key] } : null);
-      const prev = prevSrc && Array.isArray(prevSrc.people) ? normalizePeople(prevSrc.people, days) : null;
-      const next = normalizePeople(data.people, days);
-      let old = {};
-      try { old = JSON.parse(localStorage.getItem(editsKey(key)) || "{}"); } catch (e) { old = {}; }
-      const nextIdx = {};
-      next.forEach((p, i) => { nextIdx[p.id] = i; });
-      const em = {};
-      Object.keys(old).forEach(k => {
-        const [pi, di] = k.split(":").map(Number);
-        const id = prev && prev[pi] ? prev[pi].id : (next[pi] ? next[pi].id : null);
-        const ni = id != null && nextIdx[id] != null ? nextIdx[id] : null;
-        if (ni == null || di >= days) return;                        // ese cajero ya no está
-        const before = prev && prev[pi] ? (prev[pi].codes[di] || "") : null;
-        const after = next[ni].codes[di] || "";
-        if (before !== null && before !== after) return;              // el admin cambió esa celda: gana el admin
-        if (old[k] === after) return;                                 // ya coincide con la oficial
-        em[ni + ":" + di] = old[k];
-      });
-      try { localStorage.setItem(editsKey(key), JSON.stringify(em)); } catch (e) {}
-      try {
-        const t = loadEditTimes(key), keep = {};
-        Object.keys(em).forEach(k => {
-          const [pi, di] = k.split(":").map(Number);
-          const id = next[pi] && next[pi].id;
-          if (id && t[id + ":" + di]) keep[id + ":" + di] = t[id + ":" + di];
-        });
-        localStorage.setItem(editTimesKey(key), JSON.stringify(keep));
-      } catch (e) {}
-      try { localStorage.removeItem(feriadosKey(key)); } catch (e) {}
-      saveFbCache(key, data);
-      setTimeout(() => syncCj(key), 0);
-      MES_DATA[key] = data;
-      if (!AVAILABLE_MESES.includes(key)) {
-        AVAILABLE_MESES.push(key);
-        AVAILABLE_MESES.sort();
-        fillMonthSelect();
+      const save = { mes: key, version: data.version || 0 };
+      if (hasCol) save.colores = data.colores;
+      if (hasFer) save.feriados = data.feriados;
+      saveFbCache(key, save);
+      // Los feriados publicados reemplazan a los marcados a mano en este celular
+      if (hasFer) { try { localStorage.removeItem(feriadosKey(key)); } catch (e) {} }
+      if (key === currentMes) {
+        applyFbColors(key);
+        if (hasFer) feriados = officialFeriados.slice();
+        renderDayHead();
+        renderGroups();
+        buildShiftGrid();
+        applyColors();
+        updatePublishBtn();
+        if (personOverlay.classList.contains("open") && currentCalPi !== null) openPersonCalendar(currentCalPi);
       }
-      if (key === currentMes) reloadCurrentFromData(data);
     }
 
     let fbStarted = false;
@@ -2918,7 +2882,7 @@
 
     function officialPeopleFor(key) {
       if (key === currentMes) return people.map((p, i) => ({ id: p.id, codes: ORIGINAL_CODES[i] || [] }));
-      const src = loadFbCache(key) || MES_DATA[key] || (SEED_BY_MES[key] ? { people: SEED_BY_MES[key] } : null);
+      const src = MES_DATA[key] || (SEED_BY_MES[key] ? { people: SEED_BY_MES[key] } : null);
       return src && Array.isArray(src.people) ? normalizePeople(src.people, mesInfo(key).days) : [];
     }
     function scheduleCjSync(key) {
@@ -2970,7 +2934,7 @@
 
     // Arma la vista CJ del mes actual: versión oficial + el último cambio de algún cajero en cada celda
     function rebuildCj() {
-      const changedAt = ((loadFbCache(currentMes) || {}).changedAt) || {};
+      const changedAt = {};
       const latest = {};
       Object.values(cjDocs).forEach(doc => {
         if (!doc || doc.mes !== currentMes || !doc.edits) return;
@@ -2998,28 +2962,19 @@
     }
 
     // Cuántas diferencias hay entre lo que ve el admin y la versión oficial
-    // Detalle de lo que difiere de la versión oficial: turnos, colores y feriados
-    function pendingDetail() {
-      let turnos = 0;
-      people.forEach((p, pi) => {
-        for (let d = 0; d < DAYS; d++) {
-          if ((p.codes[d] || "") !== ((ORIGINAL_CODES[pi] || [])[d] || "")) turnos++;
-        }
-      });
+    // Lo único que se publica son colores: cuenta los que difieren de los oficiales del mes
+    function pendingColors() {
+      const fb = loadFbCache(currentMes);
+      const pub = Object.assign({}, BASE_COLORS, (MES_DATA[currentMes] && MES_DATA[currentMes].colores) || {}, (fb && fb.colores) || {});
+      return Object.keys(colorOverrides).filter(k =>
+        String(colorOverrides[k] || "").toUpperCase() !== String(pub[k] || "").toUpperCase());
+    }
+    function feriadosPending() {
       const fa = feriados.slice().sort((a, b) => a - b).join(",");
       const fb = (officialFeriados || []).slice().sort((a, b) => a - b).join(",");
-      // Solo cuentan los colores que de verdad son distintos a los oficiales del mes
-      const pub = (MES_DATA[currentMes] && MES_DATA[currentMes].colores) || {};
-      const colores = Object.keys(colorOverrides).filter(k => {
-        const off = String(pub[k] || BASE_COLORS[k] || "").toUpperCase();
-        return String(colorOverrides[k] || "").toUpperCase() !== off;
-      });
-      return { turnos, feriados: fa !== fb, colores };
+      return fa !== fb;
     }
-    function pendingCount() {
-      const d = pendingDetail();
-      return d.turnos + (d.feriados ? 1 : 0) + d.colores.length;
-    }
+    function pendingCount() { return pendingColors().length + (feriadosPending() ? 1 : 0); }
     function updatePublishBtn() {
       const btn = document.getElementById("btnPublish");
       if (!btn || btn.disabled || !fbStarted) return;
@@ -3030,32 +2985,19 @@
 
     document.getElementById("btnPublish").addEventListener("click", async () => {
       if (!fbReady || currentUser !== "ADMIN") return;
-      const n = pendingCount();
-      const det = pendingDetail();
+      const cols = pendingColors();
+      const ferChange = feriadosPending();
       const partes = [];
-      if (det.turnos) partes.push("• " + det.turnos + " turno" + (det.turnos === 1 ? "" : "s") + " cambiado" + (det.turnos === 1 ? "" : "s"));
-      if (det.colores.length) partes.push("• Colores: " + det.colores.join(", "));
-      if (det.feriados) partes.push("• Feriados: " + (feriados.length ? feriados.map(x => x + 1).join(", ") : "ninguno"));
-      const msg = n
-        ? "¿Publicar " + MES.nombre + " " + MES.y + " para todos?\n\n" + partes.join("\n")
-        : "No hay cambios respecto a la versión oficial. ¿Publicar " + MES.nombre + " igual?";
+      if (cols.length) partes.push("• Colores: " + cols.join(", "));
+      if (ferChange) partes.push("• Feriados de " + MES.nombre.toLowerCase() + ": " + (feriados.length ? feriados.map(x => x + 1).join(", ") : "ninguno"));
+      const msg = partes.length
+        ? "¿Publicar para todos?\n\n" + partes.join("\n") + "\n\nLos turnos no se publican: nadie ve tus cambios de turnos."
+        : "No hay colores ni feriados distintos a los publicados. ¿Publicar igual?\n\nLos turnos no se publican.";
       if (!confirm(msg)) return;
       const btn = document.getElementById("btnPublish");
       btn.disabled = true;
       btn.textContent = "Publicando…";
-      const data = currentJson();
-      data.version = Date.now();
-      data.changedAt = (function () {
-        const prevCh = (loadFbCache(currentMes) || {}).changedAt || {};
-        const out = Object.assign({}, prevCh);
-        people.forEach((p, pi) => {
-          for (let d = 0; d < DAYS; d++) {
-            if ((p.codes[d] || "") !== ((ORIGINAL_CODES[pi] || [])[d] || "")) out[p.id + ":" + d] = data.version;
-          }
-        });
-        return out;
-      })();
-      data.inicial = people.map((p, i) => ({ id: p.id, name: p.name, codes: (INITIAL_CODES[i] || p.codes).slice() }));
+      const data = { mes: currentMes, version: Date.now(), colores: Object.assign({}, colorMap), feriados: feriados.map(d => d + 1) };
       try {
         await fbDb.collection(FB_COLLECTION).doc(currentMes).set(data);
         colorOverrides = {};

@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v63</title>
+  <title>Cajeros v64</title>
   <meta name="theme-color" content="#1e3a5f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2646,6 +2646,8 @@
         loadNotesFromPeople(data.people);
         ORIGINAL_CODES = people.map(p => p.codes.slice());
         officialFeriados = normFeriados(data.feriados || []);
+        // Lo publicado en Firebase (colores, letras, feriados) manda sobre el JSON de GitHub
+        applyFbColors(mes);
         if (localStorage.getItem(feriadosKey(mes)) == null) feriados = officialFeriados.slice();
         renderDayHead();
       }

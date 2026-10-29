@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v56</title>
+  <title>Cajeros v57</title>
   <meta name="theme-color" content="#1e3a5f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1523,15 +1523,21 @@
         <h3>Colores de los turnos</h3>
         <button class="close-btn" id="closeColors" title="Cerrar">×</button>
       </div>
-      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 10px">Tocá un turno y elegí su color. Para que lo vean todos, exportá el JSON y subilo a GitHub.</p>
+      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 10px">Tocá un turno y elegí el color del fondo y de las letras. Para que lo vean todos, tocá ⬆ Publicar.</p>
       <div class="shift-grid" id="colorCodes"></div>
       <div id="colorEditor" style="display:none;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:12px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span class="code-badge" id="colorCodeBadge" style="padding:4px 12px;border-radius:6px;font-weight:800;border:1px solid rgba(0,0,0,.15)">—</span>
           <span id="colorCodeHex" style="font-size:0.75rem;color:#64748b;font-weight:600"></span>
-          <label style="margin-left:auto;font-size:0.75rem;font-weight:700;color:#334155;display:flex;align-items:center;gap:6px">Cambiar color
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label style="font-size:0.75rem;font-weight:700;color:#334155;display:flex;align-items:center;gap:6px">Fondo
             <input type="color" id="colorCustom" style="width:56px;height:36px;border:1px solid #cbd5e1;border-radius:8px;padding:2px;background:#fff;cursor:pointer">
           </label>
+          <label style="font-size:0.75rem;font-weight:700;color:#334155;display:flex;align-items:center;gap:6px">Letras
+            <input type="color" id="letraCustom" style="width:56px;height:36px;border:1px solid #cbd5e1;border-radius:8px;padding:2px;background:#fff;cursor:pointer">
+          </label>
+          <button type="button" id="letraAuto" style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:7px 10px;font-size:0.72rem;font-weight:700;color:#334155;cursor:pointer">Letras automáticas</button>
         </div>
       </div>
       <div class="palette-actions">
@@ -2127,6 +2133,21 @@
     }
     function applyColorOverrides() {
       Object.keys(colorOverrides).forEach(k => { colorMap[k] = colorOverrides[k]; });
+      Object.keys(letrasOverrides).forEach(k => {
+        if (letrasOverrides[k]) textMap[k] = letrasOverrides[k]; else delete textMap[k];
+      });
+    }
+
+    // Color de las letras de cada CT. Si un CT no tiene uno elegido, se calcula solo (negro o blanco según el fondo).
+    const textMap = {};
+    const LETRAS_OVR_KEY = "cajLetrasOverrides";
+    let letrasOverrides = {};
+    try { letrasOverrides = JSON.parse(localStorage.getItem(LETRAS_OVR_KEY) || "{}") || {}; } catch (e) { letrasOverrides = {}; }
+    function saveLetrasOverrides() {
+      try { localStorage.setItem(LETRAS_OVR_KEY, JSON.stringify(letrasOverrides)); } catch (e) {}
+    }
+    function fgFor(code, bg) {
+      return (code && textMap[code]) || getTextColor(bg);
     }
     applyColorOverrides();
 
@@ -2160,7 +2181,7 @@
         if (bg) {
           el.style.background = bg;
           const hideText = code === "LIC" && !el.classList.contains("shift-option") && !el.classList.contains("blk-first");
-          el.style.color = hideText ? bg : getTextColor(bg);
+          el.style.color = hideText ? bg : fgFor(code, bg);
           if (el.classList.contains("blk")) {
             el.style.borderLeftColor = el.classList.contains("blk-first") ? "" : bg;
             el.style.borderRightColor = el.classList.contains("blk-last") ? "" : bg;
@@ -2503,6 +2524,11 @@
           colorMap[normCode(k)] = data.colores[k];
         });
       }
+      if (data.letras && typeof data.letras === "object") {
+        Object.keys(data.letras).forEach(k => {
+          if (data.letras[k]) textMap[normCode(k)] = data.letras[k];
+        });
+      }
       applyColorOverrides();
     }
 
@@ -2799,7 +2825,7 @@
     function loadFbCache(key) {
       try {
         const d = JSON.parse(localStorage.getItem(fbCacheKey(key)) || "null");
-        return d && ((d.colores && typeof d.colores === "object") || Array.isArray(d.feriados)) ? d : null;
+        return d && ((d.colores && typeof d.colores === "object") || (d.letras && typeof d.letras === "object") || Array.isArray(d.feriados)) ? d : null;
       } catch (e) { return null; }
     }
     function saveFbCache(key, data) {
@@ -2809,20 +2835,24 @@
     function applyFbColors(key) {
       const c = loadFbCache(key);
       if (!c) return;
-      if (c.colores) applyCatalog({ colores: c.colores });
+      if (c.colores || c.letras) {
+        if (c.letras) Object.keys(textMap).forEach(k => { if (!(k in c.letras)) delete textMap[k]; });
+        applyCatalog({ colores: c.colores, letras: c.letras });
+      }
       if (Array.isArray(c.feriados)) officialFeriados = normFeriados(c.feriados);
     }
 
     // Llegan colores/feriados nuevos publicados por el admin. Los turnos NO se tocan nunca.
     function applyOfficialUpdate(key, data) {
       if (!data) return;
-      const hasCol = data.colores && typeof data.colores === "object";
+      const hasCol = (data.colores && typeof data.colores === "object") || (data.letras && typeof data.letras === "object");
       const hasFer = Array.isArray(data.feriados);
       if (!hasCol && !hasFer) return;
       const cached = loadFbCache(key);
       if (cached && cached.version && data.version && cached.version === data.version) return; // ya la tenía
       const save = { mes: key, version: data.version || 0 };
-      if (hasCol) save.colores = data.colores;
+      if (data.colores) save.colores = data.colores;
+      if (data.letras) save.letras = data.letras;
       if (hasFer) save.feriados = data.feriados;
       saveFbCache(key, save);
       // Los feriados publicados reemplazan a los marcados a mano en este celular
@@ -2963,11 +2993,22 @@
 
     // Cuántas diferencias hay entre lo que ve el admin y la versión oficial
     // Lo único que se publica son colores: cuenta los que difieren de los oficiales del mes
+    function publishedLetras() {
+      const fb = loadFbCache(currentMes);
+      return Object.assign({}, (MES_DATA[currentMes] && MES_DATA[currentMes].letras) || {}, (fb && fb.letras) || {});
+    }
     function pendingColors() {
       const fb = loadFbCache(currentMes);
       const pub = Object.assign({}, BASE_COLORS, (MES_DATA[currentMes] && MES_DATA[currentMes].colores) || {}, (fb && fb.colores) || {});
-      return Object.keys(colorOverrides).filter(k =>
+      const out = Object.keys(colorOverrides).filter(k =>
         String(colorOverrides[k] || "").toUpperCase() !== String(pub[k] || "").toUpperCase());
+      const pubL = publishedLetras();
+      Object.keys(letrasOverrides).forEach(k => {
+        if (String(letrasOverrides[k] || "").toUpperCase() !== String(pubL[k] || "").toUpperCase()) {
+          out.push(k + " (letras)");
+        }
+      });
+      return out;
     }
     function feriadosPending() {
       const fa = feriados.slice().sort((a, b) => a - b).join(",");
@@ -2997,11 +3038,13 @@
       const btn = document.getElementById("btnPublish");
       btn.disabled = true;
       btn.textContent = "Publicando…";
-      const data = { mes: currentMes, version: Date.now(), colores: Object.assign({}, colorMap), feriados: feriados.map(d => d + 1) };
+      const data = { mes: currentMes, version: Date.now(), colores: Object.assign({}, colorMap), letras: Object.assign({}, textMap), feriados: feriados.map(d => d + 1) };
       try {
         await fbDb.collection(FB_COLLECTION).doc(currentMes).set(data);
         colorOverrides = {};
         saveColorOverrides();
+        letrasOverrides = {};
+        saveLetrasOverrides();
         btn.disabled = false;
         btn.textContent = "✓ Publicado";
         btn.classList.remove("pending");
@@ -3020,6 +3063,7 @@
         mes: currentMes,
         codigos: ALL_SHIFT_CODES.slice(),
         colores: Object.assign({}, colorMap),
+        letras: Object.assign({}, textMap),
         feriados: feriados.map(d => d + 1),
         grupos: GROUPS.map(g => ({ name: g.name, count: g.count })),
         people: people.map((p, pi) => {
@@ -3134,7 +3178,7 @@
         if (!bg && code === "POK") bg = colorMap["T/P"] || colorMap["INT/P"] || colorMap["N/P"];
         if (bg) {
           opt.style.background = bg;
-          opt.style.color = getTextColor(bg);
+          opt.style.color = fgFor(code, bg);
         }
         opt.addEventListener("click", () => applyShift(code));
         shiftGrid.appendChild(opt);
@@ -3416,7 +3460,7 @@
       for (let d = 0; d < DAYS; d++) {
         const code = codesArr[d] || "";
         const bg = code ? (colorMap[code] || "#e2e8f0") : "#f8fafc";
-        const fg = code ? getTextColor(bg) : "#94a3b8";
+        const fg = code ? fgFor(code, bg) : "#94a3b8";
         const edited = markClass(pi, d);
         const cmtG = getComment(pi, d);
         const hasC = cmtG ? " has-comment" : "";
@@ -3436,7 +3480,7 @@
       for (let d = 0; d < DAYS; d++) {
         const code = codesArr[d] || "";
         const bg = code ? (colorMap[code] || "#e2e8f0") : "#f8fafc";
-        const fg = code ? getTextColor(bg) : "#94a3b8";
+        const fg = code ? fgFor(code, bg) : "#94a3b8";
         const edited = markClass(pi, d);
         const wd = WEEKDAY_ABBR[(MES.startWd + d) % 7];
         const cmtH = getComment(pi, d);
@@ -3607,7 +3651,7 @@
         const y = top + WD_H + r * (CH + GAP);
         const code = codesArr[d] || "";
         const bg = code ? (colorMap[code] || "#e2e8f0") : "#f8fafc";
-        const fg = code ? getTextColor(bg) : "#94a3b8";
+        const fg = code ? fgFor(code, bg) : "#94a3b8";
         rrect(ctx, x, y, CW, CH, 8);
         ctx.fillStyle = bg; ctx.fill();
         ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1; ctx.stroke();
@@ -3736,7 +3780,7 @@
         opt.textContent = code;
         const bg = colorMap[code] || "#e2e8f0";
         opt.style.background = bg;
-        opt.style.color = getTextColor(bg);
+        opt.style.color = fgFor(code, bg);
         opt.addEventListener("click", () => {
           colorEditCode = code;
           renderColorCodes();
@@ -3756,9 +3800,12 @@
       const badge = document.getElementById("colorCodeBadge");
       badge.textContent = colorEditCode;
       badge.style.background = cur;
-      badge.style.color = getTextColor(cur);
-      document.getElementById("colorCodeHex").textContent = cur + (colorOverrides[colorEditCode] ? " · cambiado" : "");
+      const fgCur = toHex6(fgFor(colorEditCode, cur));
+      badge.style.color = fgCur;
+      const cambiado = colorOverrides[colorEditCode] || letrasOverrides[colorEditCode];
+      document.getElementById("colorCodeHex").textContent = "Fondo " + cur + " · Letras " + (textMap[colorEditCode] ? fgCur : "automáticas") + (cambiado ? " · cambiado" : "");
       document.getElementById("colorCustom").value = cur;
+      document.getElementById("letraCustom").value = fgCur;
     }
     function refreshColorsEverywhere() {
       renderGroups();
@@ -3780,6 +3827,26 @@
     document.getElementById("colorCustom").addEventListener("input", (e) => {
       if (colorEditCode) setCodeColor(colorEditCode, e.target.value);
     });
+    function setCodeTextColor(code, hex) {
+      if (currentUser !== "ADMIN" || !code) return;
+      if (hex) {
+        hex = toHex6(hex);
+        letrasOverrides[code] = hex;
+        textMap[code] = hex;
+      } else {
+        // "" = automático (negro o blanco según el fondo)
+        letrasOverrides[code] = "";
+        delete textMap[code];
+      }
+      saveLetrasOverrides();
+      refreshColorsEverywhere();
+    }
+    document.getElementById("letraCustom").addEventListener("input", (e) => {
+      if (colorEditCode) setCodeTextColor(colorEditCode, e.target.value);
+    });
+    document.getElementById("letraAuto").addEventListener("click", () => {
+      if (colorEditCode) setCodeTextColor(colorEditCode, "");
+    });
     document.getElementById("resetColor").addEventListener("click", () => {
       if (!colorEditCode) return;
       delete colorOverrides[colorEditCode];
@@ -3787,6 +3854,10 @@
       const data = MES_DATA[currentMes];
       const pub = data && data.colores ? (data.colores[colorEditCode] || data.colores[colorEditCode.toLowerCase()]) : null;
       colorMap[colorEditCode] = pub || BASE_COLORS[colorEditCode] || "#e2e8f0";
+      delete letrasOverrides[colorEditCode];
+      saveLetrasOverrides();
+      const pubL = publishedLetras()[colorEditCode];
+      if (pubL) textMap[colorEditCode] = pubL; else delete textMap[colorEditCode];
       refreshColorsEverywhere();
     });
     function openColors() {

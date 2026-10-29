@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v57</title>
+  <title>Cajeros v62</title>
   <meta name="theme-color" content="#1e3a5f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1421,6 +1421,8 @@
     .grp-card thead th.feriado .day-num { color: #9f1239 !important; }
     .grp-card thead th .grp-n { font-weight: 500; color: #6b7280; margin-left: 4px; }
     .grp-card td.blk { font-size: 0.62rem !important; }
+    /* Bloque LIC: línea negra fina arriba y abajo (sombra interna, así no la tapa el borde de la fila vecina) */
+    .grp-card tbody td.blk[data-code="LIC"] { box-shadow: inset 0 1px 0 #111827, inset 0 -1px 0 #111827 !important; }
     /* Vista del día como en jefes: código más grande y sin negrita fuerte */
     body.day-view .day-table td.day-only { font-size: 1.05rem !important; font-weight: 600 !important; }
 </style>

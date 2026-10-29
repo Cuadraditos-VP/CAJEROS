@@ -6,8 +6,10 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v41</title>
+  <title>Cajeros v46</title>
   <meta name="theme-color" content="#1e3a5f">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Cajeros">
@@ -817,7 +819,7 @@
       margin-right: auto;
     }
     .scroll-pad { height: 55vh; pointer-events: none; }
-    @media (orientation: landscape) {
+    @media (orientation: landscape) and (max-height: 520px) {
       .title-full { display: none; }
       .title-short { display: inline; }
       header h1 { font-size: 1rem; margin: 0; line-height: 32px; }
@@ -1285,10 +1287,124 @@
     .fer-day.weekend { background: #e2e8f0; }
     .fer-day.weekend.on { background: #9f1239; color: #fff; }
 
+    .col-btn {
+      border: 0; border-radius: 7px; padding: 5px 8px; background: #b45309; color: #fff;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .col-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    @media (orientation: landscape) {
+      .col-btn { width: 32px; height: 32px; padding: 0; border-radius: 50%; }
+    }
+    #colorCodes .shift-option, #colorPaletteGrid .palette-color { outline: 1px solid rgba(0,0,0,.12); outline-offset: -1px; }
+    #colorCodes .shift-option.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.4); }
     .wa-btn { background: #25D366; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
     .wa-btn:hover { background: #1ebe5a; color: #fff; }
     .wa-btn svg { width: 18px; height: 18px; fill: currentColor; }
     .wa-btn.busy { opacity: .5; pointer-events: none; }
+    /* ===================== DISEÑO "TARJETAS" ===================== */
+    :root { --ink: #111827; --grid: #e5e7eb; }
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #fff; color: var(--ink); }
+    header h1 { color: var(--ink); font-weight: 500; letter-spacing: -0.01em; font-size: 1.25rem; }
+    header h1 b { font-weight: 800; }
+    .group-body .table-wrap { padding: 4px 10px 0; }
+
+    #groupSection1.group { border: 0 !important; box-shadow: none !important; background: transparent; }
+    .m-short { display: none; }
+    @media (max-width: 520px) { header h1 { font-size: 1rem; } .m-long { display: none; } .m-short { display: inline; } }
+    @media (min-width: 900px) { header h1 { font-size: 1.6rem; } .topbar { padding: 6px 0 4px; } }
+    .grp-card {
+      width: max-content;
+      max-width: none;
+      margin: 0 auto 16px;
+      border: 2px solid var(--ink);
+      border-radius: 12px;
+      overflow: clip;
+      background: #fff;
+      box-shadow: 0 6px 18px rgba(17, 24, 39, 0.22), 0 2px 5px rgba(17, 24, 39, 0.12);
+    }
+    .grp-card table { border-collapse: collapse; margin: 0 !important; }
+
+    /* Encabezado: blanco, día de la semana chico arriba y número grande abajo */
+    .grp-card thead th,
+    .grp-card thead th:not(.sticky-col):not(.sticky-col-2),
+    .grp-card thead th.weekend {
+      background: #fff !important;
+      color: var(--ink) !important;
+      border: 0;
+      border-left: 1px solid var(--grid);
+      border-bottom: 2px solid var(--ink) !important;
+      height: 46px !important;
+      padding: 4px 1px !important;
+      line-height: 1.1;
+    }
+    .grp-card thead th .wd {
+      display: block; font-size: 0.56rem; font-weight: 600; color: #6b7280; letter-spacing: 0.03em;
+    }
+    .grp-card thead th .day-num {
+      display: block; font-size: 1rem !important; font-weight: 600 !important; color: var(--ink); margin-top: 1px;
+    }
+    .grp-card thead th.grp-label {
+      text-align: left !important; padding-left: 10px !important;
+      font-size: 0.72rem !important; font-weight: 800; letter-spacing: 0.02em;
+      overflow: visible; white-space: nowrap;
+      border-left: 0;
+    }
+    .grp-card thead th.sticky-col-2 { border-left: 0; }
+    /* Las celdas fijas del encabezado (GRUPO 1/2) quedan por encima de los días al moverse de costado */
+    .grp-card thead th.sticky-col, .grp-card thead th.sticky-col-2 { z-index: 60 !important; }
+
+
+    /* Sin espacio extra abajo: el scroll va del tope hasta que el último jefe queda al pie de la pantalla */
+    .scroll-pad, body .scroll-pad { height: 18px !important; }
+    .grp-card:last-of-type { margin-bottom: 0; }
+
+    /* Columnas fijas: fondo blanco, sin rayado */
+    .grp-card td.sticky-col,
+    .grp-card td.sticky-col-2,
+    .grp-card tbody tr:nth-child(even) td.sticky-col,
+    .grp-card tbody tr:nth-child(even) td.sticky-col-2 {
+      background: #fff !important;
+      box-shadow: none !important;
+    }
+    .grp-card th.sticky-col, .grp-card th.sticky-col-2 { box-shadow: none !important; }
+    .grp-card td.sticky-col {
+      color: #6b7280; font-weight: 500; font-size: 0.68rem; padding-left: 10px; text-align: left;
+      border: 0; border-bottom: 1px solid var(--grid);
+    }
+    .grp-card td.sticky-col-2 {
+      color: var(--ink); font-weight: 700; font-size: 0.68rem;
+      border: 0; border-bottom: 1px solid var(--grid);
+    }
+    /* Línea gruesa que separa nombres de días */
+    .grp-card th.sticky-col-2, .grp-card td.sticky-col-2,
+    body.names-hidden .grp-card th.sticky-col, body.names-hidden .grp-card td.sticky-col {
+      border-right: 2px solid var(--ink) !important;
+    }
+
+    /* Celdas de turnos */
+    .grp-card tbody td:not(.sticky-col):not(.sticky-col-2) {
+      border: 1px solid var(--grid);
+      height: 32px !important;
+    }
+    .grp-card tbody tr:last-child td { border-bottom: 0 !important; }
+
+    /* Separador de semana (entre DO y LU) */
+    .grp-card .week-sep { border-left: 2px solid var(--ink) !important; }
+
+    /* Bloques (LAO, LIC, 10A, 10J, C/A): etiqueta en cursiva al inicio */
+    .grp-card td.blk-first {
+      font-style: italic; text-align: center !important;
+      overflow: visible !important; white-space: nowrap; position: relative; z-index: 1;
+    }
+    /* Extras de cajeros sobre el diseño de tarjetas */
+    .grp-card thead th.feriado,
+    .grp-card thead th.feriado:not(.sticky-col):not(.sticky-col-2) { background: #fde4ea !important; }
+    .grp-card thead th.feriado .wd,
+    .grp-card thead th.feriado .day-num { color: #9f1239 !important; }
+    .grp-card thead th .grp-n { font-weight: 500; color: #6b7280; margin-left: 4px; }
+    .grp-card td.blk { font-size: 0.62rem !important; }
+    /* Vista del día como en jefes: código más grande y sin negrita fuerte */
+    body.day-view .day-table td.day-only { font-size: 1.05rem !important; font-weight: 600 !important; }
 </style>
 </head>
 <body class="month-view">
@@ -1312,6 +1428,7 @@
         <select id="monthSelect" class="month-select" title="Mes" aria-label="Mes" style="display:none"></select>
         <h1><span class="title-full" id="titleFull">PROGRAMACIÓN CAJEROS</span><span class="title-short" id="titleShort"></span></h1>
         <button type="button" id="btnFeriados" class="fer-btn admin-only" title="Marcar feriados">Fer</button>
+        <button type="button" id="btnColores" class="col-btn admin-only" title="Colores de los turnos" aria-label="Colores de los turnos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18c.8 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg></button>
         <button type="button" id="btnExportJson" class="json-btn admin-only" title="Exportar JSON">↓ JSON</button>
         <button type="button" id="btnCopyJson" class="json-btn admin-only" title="Copiar JSON al portapapeles">⧉ Copiar</button>
         <button type="button" id="btnImportJson" class="json-btn admin-only" title="Importar JSON">↑ JSON</button>
@@ -1320,20 +1437,13 @@
     </header>
     <div id="dayFilterBar">
       <span id="dayFilterLabel">Sólo un día</span>
-      <button type="button" id="btnDaySort">Por turno</button>
       <button type="button" id="btnClearDay">Ver mes</button>
     </div>
 
     <section class="group" id="groupSection1">
     <div class="group-body">
     <div class="table-wrap" id="scheduleWrap">
-        <table id="scheduleTable">
-          <thead>
-            <tr id="dayHeadRow"></tr>
-          </thead>
-          <tbody id="group1"></tbody>
-          <tbody id="group2"></tbody>
-        </table>
+        <div id="groupCards"></div>
         <div class="scroll-pad" aria-hidden="true"></div>
       </div>
     </div>
@@ -1386,6 +1496,30 @@
       <div class="cal-grid" id="personCalGrid"></div>
       <div class="cal-row" id="personCalRow"></div>
       <div id="personOtSummary" class="ot-summary"></div>
+    </div>
+  </div>
+  <div class="palette-overlay" id="colorsOverlay">
+    <div class="palette-modal">
+      <div class="palette-header">
+        <h3>Colores de los turnos</h3>
+        <button class="close-btn" id="closeColors" title="Cerrar">×</button>
+      </div>
+      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 10px">Elegí un turno y después su color. Para que lo vean todos, exportá el JSON y subilo a GitHub.</p>
+      <div class="shift-grid" id="colorCodes"></div>
+      <div id="colorEditor" style="display:none;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="code-badge" id="colorCodeBadge" style="padding:4px 12px;border-radius:6px;font-weight:800;border:1px solid rgba(0,0,0,.15)">—</span>
+          <span id="colorCodeHex" style="font-size:0.75rem;color:#64748b;font-weight:600"></span>
+          <label style="margin-left:auto;font-size:0.75rem;font-weight:700;color:#334155;display:flex;align-items:center;gap:6px">Otro
+            <input type="color" id="colorCustom" style="width:38px;height:30px;border:0;padding:0;background:none;cursor:pointer">
+          </label>
+        </div>
+        <div class="palette-grid" id="colorPaletteGrid"></div>
+      </div>
+      <div class="palette-actions">
+        <button class="btn btn-clear" id="resetColor">Restablecer este</button>
+        <button class="btn btn-done" id="doneColors">Listo</button>
+      </div>
     </div>
   </div>
   <div class="palette-overlay" id="feriadosOverlay">
@@ -1571,7 +1705,79 @@
       { id: "62115", name: "DI RUSSO, MARTINA", codes: ["T", "T", "T3", "F", "E", "N", "N", "T", "T", "MS", "MD", "F", "F", "N", "E", "N", "T", "T3", "MS", "T", "F", "N", "E", "N", "TE", "T3", "T", "MS", "F", "N"] },
       { id: "62116", name: "AIRALA, LUCIANA", codes: ["N", "N", "N", "F", "N", "N", "N", "N", "N", "X", "N", "F", "F", "N", "E", "N", "N", "E", "N", "F", "F", "N", "N", "E", "N", "N", "E", "N", "F", "N"] }
     ];
-    const SEED_BY_MES = { "2026-10": SEED_OCT, "2026-09": SEED_SEP };
+    // Plantel cajeros (noviembre 2026), desde el afiche "CAJEROS VENTA PAGO NOVIEMBRE 2026".
+    // Sin Álvarez, Cecilia (50592): pasó a otro casino. Filas tachadas = LIC.
+    const SEED_NOV = [
+      { id: "62047", name: "ORTIZ, NICOLÁS", codes: ["F", "F", "N", "E", "N", "N", "E", "N", "F", "F", "N", "N", "E", "N", "N", "N", "N", "F", "X", "N", "E", "N", "N", "N", "N", "F", "E", "N", "E", "N"] },
+      { id: "61199", name: "LAFARGA", codes: ["F", "F", "T", "T", "T", "MS", "T3", "TE", "MS", "F", "T", "T", "TE", "MS", "T3", "T", "MS", "F", "T", "T", "T", "TE", "MS", "T", "MS", "F", "F", "T", "T3", "MS"] },
+      { id: "62112", name: "MENDOZA", codes: ["F", "F", "T", "T", "MS", "TE", "T3", "TE", "MS", "F", "T", "T", "TE", "T", "T", "MS", "F", "F", "T", "TE", "T", "MS", "T", "T3", "MS", "F", "TE", "T3", "MS", "T"] },
+      { id: "60666", name: "AGUIAR", codes: ["F", "F", "N", "E", "T", "TE", "TE", "TE", "MS", "F", "N", "T", "MS", "MD", "T", "T3", "MS", "F", "E1", "N", "TE", "T", "MS", "T", "F", "F", "X", "N", "T", "T"] },
+      { id: "62095", name: "GONZÁLEZ, SANTI", codes: ["F", "F", "N", "N", "X", "N", "N", "X", "N", "F", "N", "N", "N", "N", "N", "N", "N", "F", "E", "N", "N", "E", "N", "N", "F", "F", "X", "N", "N", "N"] },
+      { id: "61951", name: "SEMENZA", codes: ["F", "F", "N", "N", "T", "TE", "T3", "MS", "F", "F", "N", "N", "TE", "T3", "MS", "T", "MS", "F", "N", "T", "TE", "T", "MS", "T", "MS", "F", "N", "TE", "T3", "MS"] },
+      { id: "62034", name: "RIVERO", codes: ["F", "F", "T", "T", "N", "TE", "T", "MS", "F", "F", "T", "N", "TE", "MS", "T3", "N", "T", "MS", "F", "T", "TE", "T3", "N", "T", "T", "F", "TE", "T3", "T", "N"] },
+      { id: "61172", name: "AGÜERO", codes: ["F", "F", "E", "N", "T", "MS", "T", "T", "MS", "F", "N", "E", "N", "T3", "T", "T", "MS", "F", "E1", "N", "T", "TE", "MS", "T", "MS", "F", "F", "E", "N", "T"] },
+      { id: "61911", name: "ACOSTA", codes: ["F", "F", "F", "T", "T", "MS", "TE", "T3", "MS", "F", "T", "T", "MS", "TE", "T", "MS", "T", "F", "T", "TE", "T3", "MS", "T", "T", "T", "F", "TE", "TE", "MS", "T"] },
+      { id: "60856", name: "SIMONIT", codes: ["F", "F", "N", "E", "N", "T", "T3", "TE", "MS", "F", "N", "E", "N", "TE", "T", "T", "MS", "F", "F", "E", "N", "TE", "T", "MS", "T", "F", "E", "N", "T", "T"] },
+      { id: "62108", name: "BORRAJO", codes: ["N", "N", "F", "F", "X", "N", "E", "E", "N", "N", "F", "F", "N", "E", "N", "N", "N", "T", "F", "E", "N", "N", "N", "N", "N", "N", "F", "E", "N", "N"] },
+      { id: "61184", name: "ORTIZ, OSCAR", codes: ["E", "N", "F", "F", "N", "E", "N", "N", "E", "N", "F", "F", "N", "X", "N", "N", "N", "T", "F", "X", "N", "N", "E", "N", "N", "N", "F", "FC", "E", "N"] },
+      { id: "61920", name: "ROJAS", codes: ["T", "F", "F", "N", "N", "N", "X", "N", "N", "N", "F", "E", "N", "E", "N", "N", "N", "N", "F", "F", "E", "X", "N", "N", "N", "N", "F", "E", "N", "N"] },
+      { id: "61989", name: "ROMERO", codes: ["LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC"] },
+      { id: "61975", name: "PAVÓN", codes: ["MS", "T", "T3", "MS", "F", "F", "T", "T3", "T", "TE", "MS", "T3", "F", "F", "T", "T", "MS", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO"] },
+      { id: "61945", name: "ORIETA, BELÉN", codes: ["N", "N", "F", "N", "E1", "N", "N", "X", "N", "N", "F", "F", "E", "N", "N", "N", "N", "N", "F", "N", "E", "N", "N", "N", "E", "N", "F", "E", "N", "N"] },
+      { id: "61919", name: "PÉREZ, ITATÍ", codes: ["T", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "E", "N", "T3", "MS", "TE", "T3", "T", "MS", "F", "F", "E", "N", "T"] },
+      { id: "62033", name: "CEJA", codes: ["MS", "MS", "F", "F", "T", "TE", "MS", "T3", "T", "MS", "F", "T", "T3", "MS", "MD", "MS", "F", "F", "T", "TE", "T3", "MS", "T", "T", "MS", "F", "TE", "T3", "MS", "T"] },
+      { id: "62104", name: "ÁLVAREZ, JULIAN", codes: ["MS", "F", "F", "N", "N", "N", "T", "T", "T3", "MS", "F", "F", "E", "N", "T", "T", "T", "MS", "F", "E", "N", "TE", "T", "MS", "T", "MS", "F", "X", "N", "T"] },
+      { id: "62110", name: "IRALA", codes: ["N", "E", "N", "N", "T", "T", "F", "E", "N", "TE", "T", "T", "MS", "F", "E", "N", "N", "N", "T", "TE", "T3", "MS", "T", "T", "T", "MS", "F", "F", "F", "F"] },
+      { id: "61208", name: "PRETTO", codes: ["LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC"] },
+      { id: "49548", name: "MELO", codes: ["T", "T3", "MS", "F", "N", "T", "TE", "MS", "MD", "TE", "MS", "F", "E", "T", "T", "T", "T", "T3", "MS", "F", "T", "T", "T", "T3", "T", "MS", "F", "F", "F", "DV"] },
+      { id: "50788", name: "LÓPEZ", codes: ["N", "N", "T", "T", "MS", "X", "E", "E", "E", "N", "T", "T", "T3", "MS", "MD", "FC", "F", "F", "F", "F", "F", "F", "E", "N", "N", "T", "TE", "T3", "MS", "N"] },
+      { id: "60996", name: "GODOY", codes: ["T", "MS", "MS", "F", "F", "E", "N", "TE", "MS", "T", "MS", "F", "E", "N", "T", "MS", "T", "MS", "F", "X", "N", "E", "T", "T3", "MS", "MS", "MD", "F", "F", "MS"] },
+      { id: "61971", name: "MARTÍNEZ", codes: ["T", "MS", "F", "N", "E", "N", "N", "T", "T3", "MS", "F", "F", "E", "N", "T", "T", "T", "T", "MS", "F", "X", "N", "T", "T", "T3", "T", "MS", "F", "F", "N"] },
+      { id: "62087", name: "VENTRIGLIA", codes: ["T", "MS", "F", "F", "N", "TE", "MS", "T", "T", "TE", "MS", "T", "T3", "F", "N", "N", "T", "T", "MS", "F", "N", "T3", "T", "T", "T", "MS", "MD", "F", "F", "N"] },
+      { id: "50564", name: "SIFUENTES", codes: ["T", "T3", "MS", "F", "E", "N", "TE", "TE", "T", "MS", "F", "F", "E", "N", "T", "T", "T", "T", "MS", "F", "E", "N", "T", "T", "T3", "T", "MS", "F", "F", "E"] },
+      { id: "61051", name: "DÍAZ, JESÚS", codes: ["T", "T", "T3", "T", "MS", "F", "F", "E", "N", "TE", "MS", "F", "X", "N", "N", "T", "T", "T", "MS", "F", "E", "N", "E", "N", "T", "T", "MS", "F", "F", "E"] },
+      { id: "62109", name: "GOLDSCHLAGER", codes: ["MS", "N", "F", "F", "E", "T", "MS", "MD", "E", "N", "T", "F", "N", "TE", "MS", "N", "E", "N", "N", "F", "E", "N", "N", "E", "N", "N", "T", "F", "F", "E"] },
+      { id: "60926", name: "PARRADO", codes: ["T", "T", "T", "T", "F", "F", "T", "TE", "T", "T", "T", "T", "F", "TE", "T3", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO"] },
+      { id: "50863", name: "TRAVERSO", codes: ["E", "N", "T", "MS", "F", "E", "N", "T3", "T", "MS", "F", "F", "X", "E", "T", "T", "T", "MS", "T", "MS", "F", "F", "N", "N", "T", "T", "MS", "MD", "F", "DV"] },
+      { id: "62053", name: "ORONÁ", codes: ["MD", "T", "T3", "MS", "F", "T", "TE", "MS", "MD", "T", "MS", "F", "TE", "T", "MS", "T3", "T", "T", "T", "MS", "F", "F", "T3", "T", "T", "T", "MS", "MD", "F", "F"] },
+      { id: "60934", name: "SÁNCHEZ, TOTI", codes: ["T", "T", "T", "MS", "F", "E", "N", "N", "T", "T3", "MD", "MS", "F", "X", "N", "T", "T", "T3", "T", "MS", "F", "F", "N", "E", "N", "T", "T3", "MS", "F", "F"] },
+      { id: "61439", name: "FERNÁNDEZ", codes: ["N", "N", "E", "N", "F", "N", "N", "E", "N", "E", "N", "N", "F", "E", "N", "N", "E", "N", "N", "N", "F", "F", "N", "N", "E", "N", "N", "TE", "F", "F"] },
+      { id: "61049", name: "SÁNCHEZ, CL", codes: ["T", "T", "MS", "F", "N", "E", "X", "N", "T", "T", "T", "MS", "F", "F", "E", "E", "E", "T", "T", "MS", "F", "F", "N", "N", "N", "T", "TE", "MS", "MD", "F"] },
+      { id: "60454", name: "OLMEDO", codes: ["T3", "T", "MS", "F", "T", "TE", "TE", "MS", "F", "14F", "T", "MS", "F", "TE", "T", "T3", "MS", "T", "MS", "MD", "F", "TE", "T", "MS", "T", "MS", "T3", "MS", "F", "F"] },
+      { id: "62106", name: "TEVEZ", codes: ["E", "N", "T", "MS", "F", "X", "N", "E", "T", "T", "T", "MS", "F", "E", "E", "T", "T3", "T", "T", "MS", "F", "F", "N", "E", "N", "T", "T3", "MS", "F", "F"] },
+      { id: "60754", name: "FAISAL", codes: ["T3", "T", "T", "MS", "F", "F", "TE", "MS", "T", "MS", "F", "T", "TE", "TE", "MS", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO"] },
+      { id: "62093", name: "DOMÍNGUEZ", codes: ["T3", "T", "T", "MS", "F", "E", "N", "TE", "T", "TE", "T", "MS", "F", "E", "N", "T", "T3", "T", "MS", "MD", "F", "F", "N", "N", "N", "T", "TE", "MS", "F", "F"] },
+      { id: "62114", name: "GODMAN", codes: ["N", "E", "N", "T", "F", "F", "E", "E", "N", "T", "T3", "T", "MS", "F", "F", "E", "N", "T", "T", "TE", "MS", "F", "F", "N", "N", "T", "T", "MS", "T3", "T"] },
+      { id: "62113", name: "STAHL", codes: ["T3", "T", "MS", "T", "F", "F", "E", "N", "T", "T", "T3", "T", "MS", "F", "F", "N", "N", "T", "T", "MS", "MD", "F", "F", "N", "N", "T", "T", "TE", "T3", "MS"] },
+      { id: "50978", name: "ALÍ", codes: ["E", "T", "F", "F", "T", "T3", "T3", "MS", "F", "DV", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO"] },
+      { id: "61953", name: "ZUBILLAGA", codes: ["MS", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "T3", "MS", "T3", "T3", "MD", "F", "F", "T", "T3", "T", "MS", "TE", "T3", "F"] },
+      { id: "61962", name: "DÍAZ, VALENTÍN", codes: ["MD", "T", "MS", "T3", "T", "MS", "MD", "MD", "FC", "F", "F", "F", "F", "F", "F", "T", "T", "MS", "T", "TE", "MS", "TE", "T3", "T", "T", "T3", "MS", "TE", "T", "T"] },
+      { id: "61980", name: "CARRIZO", codes: ["N", "E", "N", "T", "MS", "F", "E", "N", "N", "TE", "T3", "T", "MS", "F", "F", "E", "N", "T", "T", "MS", "F", "E", "T", "F", "N", "F", "E", "N", "T", "T3"] },
+      { id: "50827", name: "TRIVIÑO", codes: ["MS", "T3", "T", "T", "MS", "F", "TE", "T3", "T", "TE", "T", "MS", "MD", "F", "F", "T", "T", "MS", "T3", "T", "MS", "F", "F", "F", "T", "T3", "T", "TE", "T", "MS"] },
+      { id: "61009", name: "LUCERO", codes: ["LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC"] },
+      { id: "50824", name: "ABALSAMO", codes: ["N", "N", "N", "T", "T3", "F", "E", "N", "N", "T", "T", "T3", "MS", "F", "F", "E", "N", "T", "T", "TE", "MS", "F", "F", "E", "N", "T", "TE", "MS", "MD", "F"] },
+      { id: "62049", name: "ACEVEDO", codes: ["T", "MS", "T", "T3", "F", "F", "TE", "TE", "T3", "MS", "F", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "T", "T3"] },
+      { id: "61912", name: "ARES", codes: ["N", "N", "T", "T", "T3", "MS", "F", "F", "N", "E", "T", "T3", "T", "MS", "F", "N", "N", "T", "T3", "TE", "TE", "MS", "MD", "FC", "FC", "F", "F", "F", "E", "N"] },
+      { id: "61918", name: "ORIETA, BRENDA", codes: ["N", "T", "T", "T3", "MS", "MD", "F", "F", "N", "X", "N", "T", "TE", "MS", "F", "F", "N", "E", "N", "T3", "MS", "MD", "F", "F", "E", "N", "T", "T3", "MS", "T"] },
+      { id: "50961", name: "GONZÁLEZ, KEVIN", codes: ["N", "E", "T", "T", "T3", "MS", "F", "F", "N", "X", "N", "X", "T", "T", "MS", "F", "N", "E", "N", "T", "MS", "MD", "F", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "E"] },
+      { id: "61047", name: "AZARIO", codes: ["T3", "MS", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "E", "E", "N", "T", "MS", "FC", "F", "E", "N"] },
+      { id: "62081", name: "CUADRA", codes: ["N", "T", "T", "T", "T", "T3", "F", "F", "E", "TE", "MS", "T", "TE", "MS", "F", "F", "E", "N", "T", "T", "T3", "T", "MS", "F", "F", "E", "N", "N", "T", "T3"] },
+      { id: "61996", name: "REDRUELLO", codes: ["T", "MS", "T", "T", "MS", "MD", "F", "F", "T", "T3", "T", "MS", "MD", "MD", "F", "F", "T", "T3", "T", "TE", "TE", "T3", "MS", "F", "F", "T", "TE", "TE", "MS", "T"] },
+      { id: "62046", name: "ALONSO", codes: ["MS", "T", "T", "T", "T", "T3", "F", "F", "T", "T3", "MD", "T", "TE", "T3", "F", "F", "T", "T", "T", "T", "T3", "MS", "F", "F", "T", "T3", "T", "TE", "MS", "T"] },
+      { id: "60894", name: "GUAGNINI", codes: ["LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "X", "X", "N", "F", "E", "N", "E", "N", "N", "N"] },
+      { id: "62117", name: "PIÑERO, JULIAN", codes: ["N", "N", "N", "E", "N", "T", "F", "F", "N", "N", "N", "E1", "N", "TE", "F", "F", "N", "N", "N", "E", "N", "TE", "F", "F", "N", "E", "N", "E", "N", "T"] },
+      { id: "60796", name: "GIORGIO", codes: ["F", "N", "E", "N", "T", "MS", "MD", "F", "F", "E", "E", "N", "T", "T", "MS", "F", "F", "E", "N", "N", "TE", "T3", "T", "MS", "F", "E", "N", "E", "T", "T"] },
+      { id: "62085", name: "PÉREZ, SANTIAGO", codes: ["F", "F", "N", "N", "E1", "N", "N", "F", "F", "E", "N", "E1", "N", "N", "N", "N", "F", "N", "N", "E", "N", "E", "N", "T", "F", "N", "E", "X", "N", "N"] },
+      { id: "60698", name: "LUNA", codes: ["LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC"] },
+      { id: "61970", name: "LEGUIZAMÓN", codes: ["F", "N", "N", "N", "T", "T", "MS", "F", "F", "E", "N", "N", "T", "TE", "T3", "MS", "F", "N", "N", "N", "T", "T3", "MS", "F", "F", "X", "N", "T", "T", "MS"] },
+      { id: "60458", name: "SATTLER", codes: ["LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "F", "E", "N", "N", "T", "T3", "T", "MS", "F", "N", "E", "N", "TE", "TE", "T3", "MS", "F", "E1", "N", "N", "T", "T"] },
+      { id: "62116", name: "AIRALA", codes: ["F", "F", "N", "N", "E1", "N", "T", "F", "F", "N", "N", "N", "N", "E", "N", "N", "F", "N", "E1", "E", "N", "E", "N", "T", "F", "N", "E", "N", "N", "N"] },
+      { id: "61915", name: "IGLESIAS", codes: ["F", "N", "N", "N", "T", "TE", "MS", "F", "F", "N", "E", "N", "T", "TE", "T3", "MS", "F", "N", "N", "T", "TE", "MS", "MD", "F", "F", "E1", "N", "T", "T", "MS"] },
+      { id: "61008", name: "LEYES", codes: ["LAO", "LAO", "LAO", "LAO", "N", "E", "N", "F", "F", "E", "N", "X", "N", "N", "E", "N", "F", "N", "E", "E", "N", "E", "N", "N", "F", "N", "E", "N", "N", "N"] },
+      { id: "61957", name: "BARRIONUEVO", codes: ["F", "N", "N", "N", "T", "TE", "MS", "F", "F", "N", "E", "N", "T", "T3", "MS", "F", "F", "N", "N", "N", "TE", "T", "T3", "MS", "F", "X", "N", "T", "T", "T"] },
+      { id: "62115", name: "DI RUSSO", codes: ["F", "N", "E", "N", "N", "T", "MS", "F", "F", "N", "E", "E1", "N", "N", "N", "F", "F", "N", "X", "N", "E", "N", "T", "MS", "F", "E1", "N", "N", "N", "N"] }
+    ];
+    const SEED_BY_MES = { "2026-11": SEED_NOV, "2026-10": SEED_OCT, "2026-09": SEED_SEP };
 
     let people = SEED_BY_MES[FIRST_MES].map(p => ({ id: p.id, name: p.name, codes: p.codes.slice() }));
 
@@ -1823,7 +2029,7 @@
     // o "inicial" (la programación de arranque del mes, solo lectura)
     let viewMode = "actual";
     let selectedDay = null; // índice de día (0-based) o null = mes completo
-    let daySortByShift = false;
+    let daySortByShift = true; // vista día: siempre ordenada por turno
     const DAY_VIEW_ORDER = ["MD","MS","T3","T","TE","N","E1","E","X","F"];
 
     // Todos los códigos de turno asignables desde el abanico (además de "vacío")
@@ -1841,19 +2047,39 @@
       "#002060","#FFFF00","#00FFFF","#FFFFFF"
     ];
 
+    // Colores base (los de noviembre-2026.json)
     const colorMap = {
       "MD": "#F79646",
-      "MS": "#FFC000",
-      "T3": "#FFC000",
+      "MS": "#FDA3FF",
+      "T3": "#FFD966",
       "T": "#FFFFFF",
-      "TE": "#C6EFCE",
-      "N": "#9DC3E6",
-      "E1": "#B4A7D6",
-      "E": "#5B9BD5",
-      "X": "#A5A5A5",
-      "F": "#FF6B6B",
-      "LAO": "#FFE699"
+      "TE": "#B6DC8F",
+      "N": "#018962",
+      "E1": "#5DC8C0",
+      "E": "#2253B4",
+      "X": "#864BA0",
+      "F": "#DF7272",
+      "LAO": "#756F5C",
+      "T1": "#F5F5DC",
+      "14F": "#FF6B6B",
+      "LIC": "#A9B4F5",
+      "FC": "#ffe0b2",
+      "DV": "#cccccc"
     };
+    const BASE_COLORS = Object.assign({}, colorMap);
+
+    // Colores elegidos por el admin desde la paleta. Se guardan en este dispositivo
+    // y se aplican encima de los del JSON; al exportar el JSON viajan con él.
+    const COLOR_OVR_KEY = "cajColorOverrides";
+    let colorOverrides = {};
+    try { colorOverrides = JSON.parse(localStorage.getItem(COLOR_OVR_KEY) || "{}") || {}; } catch (e) { colorOverrides = {}; }
+    function saveColorOverrides() {
+      try { localStorage.setItem(COLOR_OVR_KEY, JSON.stringify(colorOverrides)); } catch (e) {}
+    }
+    function applyColorOverrides() {
+      Object.keys(colorOverrides).forEach(k => { colorMap[k] = colorOverrides[k]; });
+    }
+    applyColorOverrides();
 
     // Codes the user requested, in exact order (display labels)
     const SUMMARY_CODES = ["MD", "MS", "T3", "T", "TE", "N", "E1", "E", "X", "F", "LAO"];
@@ -1884,8 +2110,12 @@
         if (!bg && code === "POK") bg = colorMap["T/P"] || colorMap["INT/P"] || colorMap["N/P"];
         if (bg) {
           el.style.background = bg;
-          const hideText = code === "LIC" && !el.classList.contains("shift-option");
+          const hideText = code === "LIC" && !el.classList.contains("shift-option") && !el.classList.contains("blk-first");
           el.style.color = hideText ? bg : getTextColor(bg);
+          if (el.classList.contains("blk")) {
+            el.style.borderLeftColor = el.classList.contains("blk-first") ? "" : bg;
+            el.style.borderRightColor = el.classList.contains("blk-last") ? "" : bg;
+          }
         } else {
           el.style.background = "";
           el.style.color = "";
@@ -1955,16 +2185,19 @@
           ) {
             runEnd++;
           }
-          const runLen = runEnd - di + 1;
-          td.dataset.code = upperCode;
-          td.textContent = upperCode;
-          td.className = "lao-block";
-          markComment(td, pi, di);
-          if (runLen > 1) td.colSpan = runLen;
-          if (WEEK_START_DAYS.includes(di)) td.classList.add("week-sep");
-          td.style.cursor = viewMode !== "actual" ? "default" : "pointer";
-          if (cellWasEdited(pi, di, runEnd)) td.classList.add("edited");
-          tr.appendChild(td);
+          for (let d = di; d <= runEnd; d++) {
+            const c = document.createElement("td");
+            c.dataset.pi = String(pi);
+            c.dataset.di = String(d);
+            c.dataset.code = upperCode;
+            c.className = "blk" + (d === di ? " blk-first" : "") + (d === runEnd ? " blk-last" : "");
+            if (d === di) c.textContent = upperCode;
+            if (WEEK_START_DAYS.includes(d)) c.classList.add("week-sep");
+            c.style.cursor = viewMode !== "actual" ? "default" : "pointer";
+            if (cellWasEdited(pi, d)) c.classList.add("edited");
+            markComment(c, pi, d);
+            tr.appendChild(c);
+          }
           di = runEnd + 1;
           continue;
         }
@@ -2026,15 +2259,40 @@
       return tr;
     }
 
-   const GROUPS = [
-  { name: "Grupo 1", count: 10 },
-  { name: "Grupo 2", count: 9 },
-  { name: "Grupo 3", count: 10 },
-  { name: "Grupo 4", count: 10 },
-  { name: "Grupo 5", count: 10 },
-  { name: "Grupo 6", count: 10 },
-  { name: "Grupo 7", count: 10 }
-];
+    // Grupos por mes: cada JSON puede traer "grupos"; si no, se usan los de abajo.
+    const DEFAULT_GROUPS = [
+      { name: "Grupo 1", count: 10 },
+      { name: "Grupo 2", count: 9 },
+      { name: "Grupo 3", count: 10 },
+      { name: "Grupo 4", count: 10 },
+      { name: "Grupo 5", count: 10 },
+      { name: "Grupo 6", count: 10 },
+      { name: "Grupo 7", count: 10 }
+    ];
+    const GROUPS_BY_MES = {
+      "2026-11": [
+        { name: "Grupo 1", count: 10 },
+        { name: "Grupo 2", count: 9 },
+        { name: "Grupo 3", count: 10 },
+        { name: "Grupo 4", count: 10 },
+        { name: "Grupo 5", count: 10 },
+        { name: "Grupo 6", count: 9 },
+        { name: "Grupo 7", count: 10 }
+      ]
+    };
+    let GROUPS = DEFAULT_GROUPS.slice();
+    // Elige los grupos del mes y los ajusta para que sumen exactamente la cantidad de personas
+    function setGroupsFor(key, data, total) {
+      let src = (data && Array.isArray(data.grupos) && data.grupos.length) ? data.grupos
+              : (GROUPS_BY_MES[key] || DEFAULT_GROUPS);
+      const out = src.map((g, i) => ({ name: String(g.name || ("Grupo " + (i + 1))), count: Math.max(0, Number(g.count) || 0) }));
+      let sum = out.reduce((a, g) => a + g.count, 0);
+      if (out.length && sum !== total) {
+        const last = out[out.length - 1];
+        last.count = Math.max(0, last.count + (total - sum));
+      }
+      GROUPS = out.filter(g => g.count > 0);
+    }
     function groupIndexOf(pi) {
       let acc = 0;
       for (let i = 0; i < GROUPS.length; i++) {
@@ -2043,10 +2301,8 @@
       }
       return GROUPS.length - 1;
     }
-    const g1 = document.getElementById("group1");
-    const g2 = document.getElementById("group2");
+    const groupCards = document.getElementById("groupCards");
     const daySplit = document.getElementById("daySplit");
-    const scheduleTable = document.getElementById("scheduleTable");
     const dayBody1 = document.getElementById("dayBody1");
     const dayBody2 = document.getElementById("dayBody2");
     const dayHead1 = document.getElementById("dayHead1");
@@ -2094,17 +2350,32 @@
 
     function renderGroups() {
       if (selectedDay === null) {
-        g1.innerHTML = "";
-        g2.innerHTML = "";
-        let acc = 0;
-        people.forEach((p, pi) => {
-          const gi = groupIndexOf(pi);
-          const start = GROUPS.slice(0, gi).reduce((s, g) => s + g.count, 0);
-          if (pi === start) {
-            g1.appendChild(groupTitleRow(GROUPS[gi].name, GROUPS[gi].count, DAYS + 2));
+        const wrapEl = document.getElementById("scheduleWrap");
+        const keepTop = wrapEl.scrollTop, keepLeft = wrapEl.scrollLeft;
+        groupCards.innerHTML = "";
+        let start = 0;
+        GROUPS.forEach((g, gi) => {
+          const card = document.createElement("div");
+          card.className = "grp-card";
+          const table = document.createElement("table");
+          const thead = document.createElement("thead");
+          const hr = document.createElement("tr");
+          hr.className = "day-head-row";
+          hr.dataset.gi = String(gi);
+          fillHeadRow(hr, gi);
+          thead.appendChild(hr);
+          const tbody = document.createElement("tbody");
+          for (let pi = start; pi < start + g.count && pi < people.length; pi++) {
+            tbody.appendChild(buildRow(people[pi], pi));
           }
-          g1.appendChild(buildRow(p, pi));
+          start += g.count;
+          table.appendChild(thead);
+          table.appendChild(tbody);
+          card.appendChild(table);
+          groupCards.appendChild(card);
         });
+        wrapEl.scrollTop = keepTop;
+        wrapEl.scrollLeft = keepLeft;
       } else {
         dayBody1.innerHTML = "";
         dayBody2.innerHTML = "";
@@ -2162,6 +2433,7 @@
           colorMap[normCode(k)] = data.colores[k];
         });
       }
+      applyColorOverrides();
     }
 
     // Trae el JSON de un mes (null si no existe o falla)
@@ -2177,8 +2449,11 @@
 
     // Arma el encabezado de días según el mes (cantidad de días y día de la semana del 1)
     function renderDayHead() {
-      const row = document.getElementById("dayHeadRow");
-      row.innerHTML = '<th class="sticky-col">Legajo</th><th class="sticky-col-2">Apellido</th>';
+      document.querySelectorAll("#groupCards tr.day-head-row").forEach(row => fillHeadRow(row, Number(row.dataset.gi)));
+    }
+    function fillHeadRow(row, gi) {
+      const g = GROUPS[gi] || { name: "Grupo " + (gi + 1), count: 0 };
+      row.innerHTML = '<th class="sticky-col grp-label">' + String(g.name).toUpperCase() + '</th><th class="sticky-col-2"></th>';
       for (let d = 0; d < DAYS; d++) {
         const wd = (MES.startWd + d) % 7;
         const th = document.createElement("th");
@@ -2189,7 +2464,7 @@
         if (isFeriado(d)) cls.push("feriado");
         th.className = cls.join(" ");
         th.title = isFeriado(d) ? "Feriado" : "";
-        th.innerHTML = WEEKDAY_ABBR[wd] + '<br><span class="day-num">' + (d + 1) + (isFeriado(d) ? " F" : "") + "</span>";
+        th.innerHTML = '<span class="wd">' + WEEKDAY_ABBR[wd] + '</span><span class="day-num">' + (d + 1) + "</span>";
         row.appendChild(th);
       }
     }
@@ -2209,11 +2484,11 @@
         if (wd === 0 && d > 0) WEEK_START_DAYS.push(d);
       }
       document.documentElement.style.setProperty("--days-total", (DAYS * 42) + "px");
-      document.getElementById("titleFull").textContent = "PROGRAMACIÓN CAJEROS — " + MES.nombre + " " + MES.y;
+      document.getElementById("titleFull").innerHTML = "<b>CAJEROS</b> <span class=\"m-long\">" + MES.nombre + "</span><span class=\"m-short\">" + MES_ABR[MES.m - 1].toUpperCase() + "</span> " + MES.y;
       document.getElementById("titleShort").textContent = MES.m + "/" + String(MES.y).slice(2);
       document.title = "Cajeros " + MES_ABR[MES.m - 1] + " " + MES.y;
       selectedDay = null;
-      daySortByShift = false;
+      daySortByShift = true;
       loadEdits();
       loadComments();
       renderDayHead();
@@ -2233,6 +2508,7 @@
       } else {
         people = normalizePeople(SEED_BY_MES[key]);
       }
+      setGroupsFor(key, data, people.length);
       loadFeriados();
       renderDayHead();
       ORIGINAL_CODES = people.map(p => p.codes.slice());
@@ -2263,6 +2539,7 @@
         MES_DATA[mes] = data;
         applyCatalog(data);
         people = normalizePeople(data.people);
+        setGroupsFor(mes, data, people.length);
         loadNotesFromPeople(data.people);
         ORIGINAL_CODES = people.map(p => p.codes.slice());
         officialFeriados = normFeriados(data.feriados || []);
@@ -2277,6 +2554,14 @@
 
     // ---- Meses disponibles ----
     const MES_DATA = {
+      "2026-11": {
+        mes: "2026-11",
+        codigos: ["14F", "DV", "E", "E1", "F", "FC", "LAO", "LIC", "MD", "MS", "N", "T", "T3", "TE", "X"],
+        colores: {"MD": "#F79646", "MS": "#FDA3FF", "T3": "#FFD966", "T": "#FFFFFF", "TE": "#B6DC8F", "N": "#018962", "E1": "#5DC8C0", "E": "#2253B4", "X": "#864BA0", "F": "#DF7272", "LAO": "#756F5C", "T1": "#F5F5DC", "14F": "#FF6B6B", "LIC": "#A9B4F5", "FC": "#ffe0b2", "DV": "#cccccc"},
+        feriados: [9, 11, 23],
+        grupos: GROUPS_BY_MES["2026-11"],
+        people: null // se rellena abajo con SEED_NOV
+      },
       // Septiembre 2026 embebido (desde septiembre-2026.json)
       "2026-09": {
         mes: "2026-09",
@@ -2288,6 +2573,7 @@
     };        // JSON publicado ya traído, por mes
     // Vincular people de septiembre a la semilla (misma referencia)
     MES_DATA["2026-09"].people = SEED_SEP;
+    MES_DATA["2026-11"].people = SEED_NOV;
     let AVAILABLE_MESES = [];
 
     function mesKeyOf(y, m) { return y + "-" + String(m).padStart(2, "0"); }
@@ -2412,6 +2698,7 @@
         codigos: ALL_SHIFT_CODES.slice(),
         colores: Object.assign({}, colorMap),
         feriados: feriados.map(d => d + 1),
+        grupos: GROUPS.map(g => ({ name: g.name, count: g.count })),
         people: people.map((p, pi) => {
           const notes = [];
           for (let d = 0; d < DAYS; d++) notes.push(getComment(pi, d) || "");
@@ -2488,6 +2775,7 @@
               !confirm("Este JSON es de " + data.mes + " pero estás viendo " + currentMes + ". ¿Importarlo igual?")) return;
           applyCatalog(data);
           people = normalizePeople(list);
+          setGroupsFor(currentMes, Array.isArray(data) ? null : data, people.length);
           ORIGINAL_CODES = people.map(p => p.codes.slice());
           if (Array.isArray(data.feriados)) {
             feriados = normFeriados(data.feriados);
@@ -2669,26 +2957,22 @@
     function toggleDayFilter(di) {
       if (selectedDay === di) {
         selectedDay = null;
-        daySortByShift = false;
+        daySortByShift = true;
       } else {
         selectedDay = di;
-        daySortByShift = false;
+        daySortByShift = true;
       }
       refreshAfterEdit();
     }
-    document.getElementById("btnDaySort").addEventListener("click", () => {
-      daySortByShift = !daySortByShift;
-      refreshAfterEdit();
-    });
-    document.getElementById("dayHeadRow").addEventListener("click", (e) => {
-      const th = e.target.closest("th[data-di]");
+    document.getElementById("groupCards").addEventListener("click", (e) => {
+      const th = e.target.closest("thead th[data-di]");
       if (!th) return;
       e.preventDefault();
       toggleDayFilter(Number(th.dataset.di));
     });
     document.getElementById("btnClearDay").addEventListener("click", () => {
       selectedDay = null;
-      daySortByShift = false;
+      daySortByShift = true;
       refreshAfterEdit();
     });
 
@@ -3058,6 +3342,103 @@
       e.stopPropagation();
       sharePersonCalendar();
     });
+
+    // ========== PALETA DE COLORES POR TURNO (solo admin) ==========
+    let colorEditCode = null;
+    const colorsOverlay = document.getElementById("colorsOverlay");
+    function colorCodesList() {
+      const out = [];
+      ALL_SHIFT_CODES.forEach(c => { if (c && out.indexOf(c) < 0) out.push(c); });
+      people.forEach(p => (p.codes || []).forEach(c => { c = normCode(c); if (c && out.indexOf(c) < 0) out.push(c); }));
+      return out;
+    }
+    function colorChoices() {
+      const out = [];
+      Object.keys(BASE_COLORS).forEach(k => { const v = BASE_COLORS[k].toUpperCase(); if (out.indexOf(v) < 0) out.push(v); });
+      PALETTE.forEach(v => { v = v.toUpperCase(); if (out.indexOf(v) < 0) out.push(v); });
+      return out;
+    }
+    function toHex6(c) {
+      c = String(c || "#FFFFFF");
+      if (/^#[0-9a-f]{3}$/i.test(c)) c = "#" + c.slice(1).split("").map(x => x + x).join("");
+      return /^#[0-9a-f]{6}$/i.test(c) ? c.toUpperCase() : "#FFFFFF";
+    }
+    function renderColorCodes() {
+      const grid = document.getElementById("colorCodes");
+      grid.innerHTML = "";
+      colorCodesList().forEach(code => {
+        const opt = document.createElement("div");
+        opt.className = "shift-option" + (code === colorEditCode ? " selected" : "");
+        opt.textContent = code;
+        const bg = colorMap[code] || "#e2e8f0";
+        opt.style.background = bg;
+        opt.style.color = getTextColor(bg);
+        opt.addEventListener("click", () => { colorEditCode = code; renderColorCodes(); renderColorEditor(); });
+        grid.appendChild(opt);
+      });
+    }
+    function renderColorEditor() {
+      const ed = document.getElementById("colorEditor");
+      if (!colorEditCode) { ed.style.display = "none"; return; }
+      ed.style.display = "block";
+      const cur = toHex6(colorMap[colorEditCode] || "#e2e8f0");
+      const badge = document.getElementById("colorCodeBadge");
+      badge.textContent = colorEditCode;
+      badge.style.background = cur;
+      badge.style.color = getTextColor(cur);
+      document.getElementById("colorCodeHex").textContent = cur + (colorOverrides[colorEditCode] ? " · cambiado" : "");
+      document.getElementById("colorCustom").value = cur;
+      const pg = document.getElementById("colorPaletteGrid");
+      pg.innerHTML = "";
+      colorChoices().forEach(hex => {
+        const sw = document.createElement("div");
+        sw.className = "palette-color" + (hex === cur ? " selected" : "");
+        sw.style.background = hex;
+        sw.title = hex;
+        sw.addEventListener("click", () => setCodeColor(colorEditCode, hex));
+        pg.appendChild(sw);
+      });
+    }
+    function refreshColorsEverywhere() {
+      renderGroups();
+      buildShiftGrid();
+      applyColors();
+      if (personOverlay.classList.contains("open") && currentCalPi !== null) openPersonCalendar(currentCalPi);
+      renderColorCodes();
+      renderColorEditor();
+    }
+    function setCodeColor(code, hex) {
+      if (currentUser !== "ADMIN" || !code) return;
+      hex = toHex6(hex);
+      colorOverrides[code] = hex;
+      colorMap[code] = hex;
+      saveColorOverrides();
+      refreshColorsEverywhere();
+    }
+    document.getElementById("colorCustom").addEventListener("input", (e) => {
+      if (colorEditCode) setCodeColor(colorEditCode, e.target.value);
+    });
+    document.getElementById("resetColor").addEventListener("click", () => {
+      if (!colorEditCode) return;
+      delete colorOverrides[colorEditCode];
+      saveColorOverrides();
+      const data = MES_DATA[currentMes];
+      const pub = data && data.colores ? (data.colores[colorEditCode] || data.colores[colorEditCode.toLowerCase()]) : null;
+      colorMap[colorEditCode] = pub || BASE_COLORS[colorEditCode] || "#e2e8f0";
+      refreshColorsEverywhere();
+    });
+    function openColors() {
+      if (currentUser !== "ADMIN") return;
+      colorEditCode = null;
+      renderColorCodes();
+      renderColorEditor();
+      colorsOverlay.classList.add("open");
+    }
+    function closeColors() { colorsOverlay.classList.remove("open"); }
+    document.getElementById("btnColores").addEventListener("click", openColors);
+    document.getElementById("closeColors").addEventListener("click", closeColors);
+    document.getElementById("doneColors").addEventListener("click", closeColors);
+    colorsOverlay.addEventListener("click", (e) => { if (e.target === colorsOverlay) closeColors(); });
 
     function renderFeriadosGrid() {
       const grid = document.getElementById("feriadosGrid");

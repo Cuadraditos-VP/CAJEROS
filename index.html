@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v46</title>
+  <title>Cajeros v47</title>
   <meta name="theme-color" content="#1e3a5f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2604,7 +2604,7 @@
     }
     document.getElementById("monthSelect").addEventListener("change", (e) => {
       const key = e.target.value;
-      try { sessionStorage.setItem("cajerosMes", key); } catch (err) {}
+      try { localStorage.setItem("cajerosMes", key); } catch (err) {}
       switchMonth(key);
     });
 
@@ -2615,7 +2615,7 @@
       AVAILABLE_MESES = cands.filter(k => MES_DATA[k] || SEED_BY_MES[k]);
       if (!AVAILABLE_MESES.length) AVAILABLE_MESES = [FIRST_MES];
       let want = null;
-      try { want = sessionStorage.getItem("cajerosMes"); } catch (e) {}
+      try { want = localStorage.getItem("cajerosMes"); } catch (e) {}
       if (!want || !AVAILABLE_MESES.includes(want)) {
         const now = new Date();
         const today = mesKeyOf(now.getFullYear(), now.getMonth() + 1);

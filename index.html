@@ -1062,7 +1062,7 @@
     .cal-day {
       min-height: 52px;
       border-radius: 8px;
-      border: 1px solid #e5e7eb;
+      border: 1px solid #94a3b8;
       padding: 4px 3px;
       display: flex;
       flex-direction: column;
@@ -1085,7 +1085,7 @@
       flex: 0 0 58px;
       min-height: 100px;
       border-radius: 8px;
-      border: 1px solid #e5e7eb;
+      border: 1px solid #94a3b8;
       padding: 4px 2px;
       display: flex;
       flex-direction: column;
@@ -1426,7 +1426,7 @@
     /* Vista del día como en jefes: código más grande y sin negrita fuerte */
     body.day-view .day-table td.day-only { font-size: 1.05rem !important; font-weight: 600 !important; }
     /* ===== PEDIDOS DE CAMBIO ===== */
-    .ped-btn { background: #ea580c; }
+    .ped-btn { background: #ea580c; width: auto !important; height: 32px !important; padding: 0 12px !important; border-radius: 8px !important; font-size: 0.8rem !important; letter-spacing: 0; display: inline-flex; align-items: center; }
     body.pedidos-on .ped-btn { background: #9a3412; box-shadow: 0 0 0 2px #fdba74; }
     #pedidosBar {
       display: none; width: 100%; max-width: 560px; margin: 0 auto 8px;
@@ -1499,7 +1499,7 @@
         <button type="button" id="btnExportJson" class="json-btn admin-only" title="Exportar JSON">↓ JSON</button>
         <button type="button" id="btnCopyJson" class="json-btn admin-only" title="Copiar JSON al portapapeles">⧉ Copiar</button>
         <button type="button" id="btnImportJson" class="json-btn admin-only" title="Importar JSON">↑ JSON</button>
-        <button type="button" id="btnPedidos" class="json-btn fb-only ped-btn" title="Pedidos de cambio de turno">P</button>
+        <button type="button" id="btnPedidos" class="json-btn fb-only ped-btn" title="Pedidos de cambio de turno">Cambios</button>
         <button type="button" id="btnPublish" class="json-btn admin-only fb-only publish-btn" title="Publicar colores y feriados para todos (los turnos nunca se publican desde acá)">⬆ Publicar</button>
         <input id="importJsonFile" type="file" accept="application/json,.json" hidden>
       </div>
@@ -2698,7 +2698,7 @@
         if (wd === 0 && d > 0) WEEK_START_DAYS.push(d);
       }
       document.documentElement.style.setProperty("--days-total", (DAYS * 42) + "px");
-      document.getElementById("titleFull").innerHTML = "<b>CAJEROS</b> <span class=\"m-long\">" + MES.nombre + "</span><span class=\"m-short\">" + MES_ABR[MES.m - 1].toUpperCase() + "</span> " + MES.y;
+      document.getElementById("titleFull").innerHTML = "<b><span class=\"m-long\">" + MES.nombre + "</span><span class=\"m-short\">" + MES_ABR[MES.m - 1].toUpperCase() + "</span></b> " + MES.y;
       document.getElementById("titleShort").textContent = MES.m + "/" + String(MES.y).slice(2);
       document.title = "Cajeros " + MES_ABR[MES.m - 1] + " " + MES.y;
       selectedDay = null;
@@ -3072,17 +3072,22 @@
       const tengoEl = document.getElementById("pedidoTengo");
       tengoEl.innerHTML = "";
       const showGrids = !!esMio;
-      ["pedidoTengoLbl", "pedidoTengo", "pedidoGridLbl", "pedidoGrid"].forEach(x => {
+      ["pedidoGridLbl", "pedidoGrid"].forEach(x => {
         document.getElementById(x).style.display = showGrids ? "" : "none";
       });
+      // Lo que se ofrece es siempre lo que el cajero tiene cargado en su celular ese día
+      ["pedidoTengoLbl", "pedidoTengo"].forEach(x => { document.getElementById(x).style.display = "none"; });
       const frEl = document.getElementById("pedidoFrancos");
       frEl.innerHTML = "";
       frEl.style.display = "none";
       document.getElementById("pedidoFrancosLbl").style.display = "none";
 
       if (esMio) {
-        if (pedPi !== pi || pedDi !== di || !pedTengoSel || pedidoOverlay.dataset.k !== pi + ":" + di) {
-          pedTengoSel = ped && ped.ofrece ? String(ped.ofrece).toUpperCase() : actualDe(pi, di);
+        pedTengoSel = actualDe(pi, di);
+        // Si cambió su turno en el celular después de pedir, se actualiza lo que ofrece
+        if (ped && pedTengoSel && String(ped.ofrece || "").toUpperCase() !== pedTengoSel) {
+          guardarPedido(pi, di, ped.quiere, esFranco(ped) ? ped.francos : null);
+          return;
         }
         pedidoOverlay.dataset.k = pi + ":" + di;
         pedPi = pi; pedDi = di;
@@ -3097,7 +3102,7 @@
         } else {
           body.innerHTML = '<div class="ped-info">' +
             (ped ? 'Pedís ' + pill(ped.quiere) + ' y ofrecés ' + pill(ped.ofrece || pedTengoSel) + '.'
-                 : 'Confirmá qué tenés ese día y elegí lo que necesitás.') + '</div>';
+                 : 'Ese día tenés ' + pill(pedTengoSel) + '. Elegí lo que necesitás.') + '</div>';
         }
         const resps = ped && ped.respuestas ? Object.values(ped.respuestas) : [];
         if (resps.length) {
@@ -3886,6 +3891,48 @@
         CJ_MARKS[pi + ":" + di] = true;
       });
     }
+
+    // Admin: descartar un cambio que aparece en CJ (lo borra de todos los celulares que lo mandaron)
+    function descartarCj(pi, di) {
+      const p = people[pi];
+      if (!p) return;
+      const key = p.id + ":" + di;
+      const docs = Object.keys(cjDocs).filter(k => {
+        const d = cjDocs[k];
+        return d && d.mes === currentMes && d.edits && d.edits[key];
+      });
+      if (!docs.length) return;
+      const code = (CJ_CODES[pi] || [])[di] || "";
+      const orig = ((ORIGINAL_CODES[pi] || [])[di]) || "—";
+      if (!confirm("¿Descartar este cambio de CJ?\n\n" + p.name + " · día " + (di + 1) + ": " + orig + " → " + code +
+        "\n\nVolvés a ver lo oficial. Si el cajero de verdad lo tiene en su celular, vuelve a aparecer la próxima vez que cambie algo.")) return;
+      const prev = {};
+      docs.forEach(k => {
+        prev[k] = cjDocs[k].edits;
+        const ne = Object.assign({}, cjDocs[k].edits);
+        delete ne[key];
+        cjDocs[k] = Object.assign({}, cjDocs[k], { edits: ne });
+      });
+      refreshAfterEdit();
+      Promise.all(docs.map(k => fbDb.collection(CJ_COLLECTION).doc(k).update({ edits: cjDocs[k].edits })))
+        .then(() => showShareToast("Cambio descartado"))
+        .catch(err => {
+          docs.forEach(k => { cjDocs[k] = Object.assign({}, cjDocs[k], { edits: prev[k] }); });
+          refreshAfterEdit();
+          alert(err && err.code === "permission-denied"
+            ? "Firebase no deja descartar (falta actualizar las reglas de cj_cajeros)."
+            : "No se pudo descartar. Revisá la conexión.");
+        });
+    }
+    document.addEventListener("click", (e) => {
+      if (viewMode !== "cj" || currentUser !== "ADMIN" || pedidosMode) return;
+      if (e.target.closest(".palette-overlay") || e.target.closest("thead")) return;
+      const td = e.target.closest("td[data-pi][data-di]");
+      if (!td) return;
+      const pi = Number(td.dataset.pi), di = Number(td.dataset.di);
+      if (!CJ_MARKS[pi + ":" + di]) return;
+      descartarCj(pi, di);
+    });
 
     // Cuántas diferencias hay entre lo que ve el admin y la versión oficial
     // Lo único que se publica son colores: cuenta los que difieren de los oficiales del mes

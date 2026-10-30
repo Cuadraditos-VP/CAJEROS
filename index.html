@@ -1508,6 +1508,7 @@
       <span id="pedidosLabel">Pedidos de cambio</span>
       <button type="button" id="btnYo">¿Quién sos?</button>
       <button type="button" id="btnAcuerdos" class="admin-only">Acordados</button>
+      <button type="button" id="btnCelulares" class="admin-only">Celulares</button>
       <button type="button" id="btnSalirPedidos">Salir</button>
     </div>
     <div id="dayFilterBar">
@@ -1631,13 +1632,23 @@
       <div id="acuerdosList"></div>
     </div>
   </div>
+  <div class="palette-overlay" id="celularesOverlay">
+    <div class="palette-modal">
+      <div class="palette-header">
+        <h3>Celulares registrados</h3>
+        <button class="close-btn" id="closeCelulares" title="Cerrar">×</button>
+      </div>
+      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 6px">Qué nombre eligió cada celular. "Liberar" hace que ese celular vuelva a preguntar "¿Quién sos?" la próxima vez que abra la app.</p>
+      <div id="celularesList"></div>
+    </div>
+  </div>
   <div class="palette-overlay" id="yoOverlay">
     <div class="palette-modal">
       <div class="palette-header">
         <h3>¿Quién sos?</h3>
         <button class="close-btn" id="closeYo" title="Cerrar">×</button>
       </div>
-      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 8px">Elegí tu nombre una sola vez. Queda guardado en este celular y es la fila donde podés pedir cambios.</p>
+      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 8px">Elegí tu nombre una sola vez. Queda guardado en este celular y es la fila donde podés pedir cambios. Si te equivocás, solo lo puede corregir el administrador.</p>
       <input id="yoSearch" type="search" placeholder="Buscar apellido o legajo" autocomplete="off">
       <div id="yoList"></div>
     </div>
@@ -2956,7 +2967,10 @@
       document.getElementById("btnAcuerdos").textContent = "Acordados" + (nAcu ? " (" + nAcu + ")" : "");
       document.getElementById("pedidosLabel").textContent =
         "Pedidos · " + n + (n === 1 ? " pedido" : " pedidos") + (me ? " · sos " + me.p.name : "");
-      document.getElementById("btnYo").textContent = me ? "Cambiar" : "¿Quién sos?";
+      const btnYo = document.getElementById("btnYo");
+      btnYo.textContent = me ? "Cambiar" : "¿Quién sos?";
+      // Una vez elegido, solo el admin (logueado en ese celular) lo puede cambiar
+      btnYo.style.display = me && currentUser !== "ADMIN" ? "none" : "";
     }
 
     function startPedidos() {
@@ -2999,18 +3013,37 @@
         b.type = "button";
         b.innerHTML = p.name + "<span>" + p.id + "</span>";
         b.addEventListener("click", () => {
-          if (!confirm("¿Sos " + p.name + " (" + p.id + ")?")) return;
-          miLegajo = String(p.id);
-          try { localStorage.setItem("cajYo", miLegajo); } catch (e) {}
-          yoOverlay.classList.remove("open");
-          aplicarAcuerdos();
-          updatePedidosBar();
-          refreshAfterEdit();
+          const msgYo = currentUser === "ADMIN"
+            ? "¿Asignar este celular a " + p.name + " (" + p.id + ")?"
+            : "¿Sos " + p.name + " (" + p.id + ")?\n\nQueda guardado en este celular y después solo lo puede cambiar el administrador.";
+          if (!confirm(msgYo)) return;
+          b.disabled = true;
+          const prevTxt = b.innerHTML;
+          b.innerHTML = "Reservando…";
+          reservarLegajo(p.id, p.name).then(ok => {
+            b.disabled = false;
+            b.innerHTML = prevTxt;
+            if (ok === null) return;
+            if (!ok) {
+              alert(p.name + " ya está en uso en otro celular.\n\nSi sos vos, pedile al administrador que lo libere.");
+              return;
+            }
+            const anterior = miLegajo;
+            miLegajo = String(p.id);
+            try { localStorage.setItem("cajYo", miLegajo); } catch (e) {}
+            if (anterior && anterior !== miLegajo) soltarLegajo(anterior);
+            registrarYo(true);
+            yoOverlay.classList.remove("open");
+            aplicarAcuerdos();
+            updatePedidosBar();
+            refreshAfterEdit();
+          });
         });
         list.appendChild(b);
       });
     }
     function openYo() {
+      if (miPersona() && currentUser !== "ADMIN") return;
       document.getElementById("yoSearch").value = "";
       renderYoList();
       yoOverlay.classList.add("open");
@@ -3433,6 +3466,158 @@
       openPedido(Number(td.dataset.pi), Number(td.dataset.di));
     });
 
+    // ========== REGISTRO DE CADA CELULAR (yo_cajeros) ==========
+    // Un documento por celular (id = uid de Firebase) con el nombre que eligió.
+    // Si el admin lo borra ("Liberar"), ese celular vuelve a preguntar "¿Quién sos?".
+    const YO_COLLECTION = "yo_cajeros";
+    // Reserva de cada legajo: un solo celular por nombre (legajos_cajeros/{legajo} = { uid, ... })
+    const LEG_COLLECTION = "legajos_cajeros";
+    function dispositivo() {
+      const ua = navigator.userAgent || "";
+      const so = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android"
+        : /Windows/.test(ua) ? "Windows" : /Mac OS X|Macintosh/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "Otro";
+      const nav = /SamsungBrowser/.test(ua) ? "Samsung Internet" : /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera"
+        : /Firefox|FxiOS/.test(ua) ? "Firefox" : /CriOS|Chrome/.test(ua) ? "Chrome" : /Safari/.test(ua) ? "Safari" : "otro navegador";
+      return so + " · " + nav;
+    }
+    // true = reservado para este celular · false = lo tiene otro · null = no se pudo (error / sin conexión)
+    async function reservarLegajo(id, name) {
+      if (!fbReady) return true;
+      if (!yoUid) { alert("Esperá unos segundos a que cargue y probá de nuevo."); return null; }
+      const ref = fbDb.collection(LEG_COLLECTION).doc(String(id));
+      try {
+        const d = await ref.get();
+        if (d.exists && d.data() && d.data().uid !== yoUid) return false;
+      } catch (e) {}
+      try {
+        await ref.set({ uid: yoUid, id: String(id), name: name, t: Date.now() });
+        return true;
+      } catch (err) {
+        if (err && err.code === "permission-denied") return false;
+        alert("No se pudo guardar tu nombre. Revisá la conexión y probá de nuevo.");
+        return null;
+      }
+    }
+    function soltarLegajo(id) {
+      if (!fbReady || !yoUid || !id) return;
+      const ref = fbDb.collection(LEG_COLLECTION).doc(String(id));
+      ref.get().then(d => { if (d.exists && d.data() && d.data().uid === yoUid) return ref.delete(); }).catch(() => {});
+    }
+    // Celulares que eligieron nombre antes del bloqueo: se reserva al abrir. Si ya lo tiene otro, se pierde.
+    async function asegurarReserva() {
+      if (!miLegajo || !yoUid) return;
+      const me = miPersona();
+      const ok = await reservarLegajo(miLegajo, me ? me.p.name : miLegajo);
+      if (ok === false) {
+        try { localStorage.removeItem("cajYo"); localStorage.removeItem(yoRegKey(yoUid)); } catch (e) {}
+        miLegajo = "";
+        updatePedidosBar();
+        refreshAfterEdit();
+        showShareToast("Tu nombre ya está en uso en otro celular. Avisale al administrador.");
+        return;
+      }
+      if (ok) registrarYo(false);
+    }
+    let yoUid = "", yoUnsub = null;
+    function yoRegKey(uid) { return "cajYoReg:" + uid; }
+    function registrarYo(forzar) {
+      if (!fbReady || !yoUid || !miLegajo) return;
+      let reg = null;
+      try { reg = localStorage.getItem(yoRegKey(yoUid)); } catch (e) {}
+      if (!forzar && reg === String(miLegajo)) return;
+      const me = miPersona();
+      const data = { uid: yoUid, id: String(miLegajo), name: me ? me.p.name : String(miLegajo), disp: dispositivo(), t: Date.now() };
+      fbDb.collection(YO_COLLECTION).doc(yoUid).set(data)
+        .then(() => { try { localStorage.setItem(yoRegKey(yoUid), String(miLegajo)); } catch (e) {} })
+        .catch(err => console.warn("yo_cajeros:", err));
+    }
+    function startYoSync(u) {
+      if (!fbReady || !u || u.uid === yoUid) return;
+      if (yoUnsub) { yoUnsub(); yoUnsub = null; }
+      yoUid = u.uid;
+      asegurarReserva();
+      yoUnsub = fbDb.collection(YO_COLLECTION).doc(yoUid).onSnapshot(d => {
+        if (d.exists) return;
+        let reg = null;
+        try { reg = localStorage.getItem(yoRegKey(yoUid)); } catch (e) {}
+        if (!reg || !miLegajo) return; // nunca se registró: no es una liberación
+        // El admin liberó este celular
+        try { localStorage.removeItem("cajYo"); localStorage.removeItem(yoRegKey(yoUid)); } catch (e) {}
+        miLegajo = "";
+        updatePedidosBar();
+        refreshAfterEdit();
+        showShareToast("El administrador liberó tu nombre. Volvé a elegir quién sos en Pedidos.");
+      }, err => console.warn("yo_cajeros:", err));
+    }
+
+    const celularesDocs = {};
+    let celUnsub = null;
+    function startCelularesListener() {
+      if (celUnsub || !fbReady) return;
+      celUnsub = fbDb.collection(YO_COLLECTION).onSnapshot(qs => {
+        qs.docChanges().forEach(ch => {
+          if (ch.type === "removed") delete celularesDocs[ch.doc.id];
+          else celularesDocs[ch.doc.id] = ch.doc.data();
+        });
+        if (celularesOverlay.classList.contains("open")) renderCelulares();
+        updateCelularesBtn();
+      }, err => console.warn("Celulares:", err));
+    }
+    function stopCelularesListener() {
+      if (celUnsub) { celUnsub(); celUnsub = null; }
+      Object.keys(celularesDocs).forEach(k => delete celularesDocs[k]);
+    }
+    function repetidos() {
+      const cnt = {};
+      Object.values(celularesDocs).forEach(d => { if (d && d.id) cnt[d.id] = (cnt[d.id] || 0) + 1; });
+      return cnt;
+    }
+    function updateCelularesBtn() {
+      const cnt = repetidos();
+      const dup = Object.keys(cnt).filter(k => cnt[k] > 1).length;
+      const b = document.getElementById("btnCelulares");
+      if (b) b.textContent = "Celulares" + (dup ? " (" + dup + " ⚠)" : "");
+    }
+    const celularesOverlay = document.getElementById("celularesOverlay");
+    function renderCelulares() {
+      const list = document.getElementById("celularesList");
+      const cnt = repetidos();
+      const items = Object.keys(celularesDocs).map(k => ({ k, d: celularesDocs[k] })).filter(x => x.d)
+        .sort((a, b) => (cnt[b.d.id] > 1) - (cnt[a.d.id] > 1) || String(a.d.name).localeCompare(String(b.d.name)));
+      list.innerHTML = items.length ? "" : '<div class="ped-note info">Todavía ningún celular eligió nombre.</div>';
+      items.forEach(({ k, d }) => {
+        const row = document.createElement("div");
+        row.className = "acu-row";
+        const dup = cnt[d.id] > 1;
+        const f = d.t ? new Date(d.t) : null;
+        const fecha = f ? f.getDate() + "/" + (f.getMonth() + 1) + " " + String(f.getHours()).padStart(2, "0") + ":" + String(f.getMinutes()).padStart(2, "0") : "";
+        row.innerHTML = '<div class="acu-top"><span>' + d.name + ' · ' + d.id + '</span></div>' +
+          '<div style="font-size:0.72rem;color:#64748b">Elegido ' + fecha + (d.disp ? ' · ' + d.disp : '') + (k === yoUid ? ' · este celular' : '') + '</div>' +
+          (dup ? '<div class="ped-note" style="background:#fef3c7;color:#92400e;margin-top:6px">⚠ Este nombre está elegido en ' + cnt[d.id] + ' celulares</div>' : '');
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "ped-act"; b.textContent = "Liberar";
+        b.addEventListener("click", () => {
+          if (!confirm("¿Liberar el celular de " + d.name + "?\n\nLa próxima vez que abra la app le va a preguntar de nuevo quién es.")) return;
+          delete celularesDocs[k];
+          renderCelulares(); updateCelularesBtn();
+          // Se borra la reserva del legajo (si es de este celular) y el registro del celular
+          const legRef = fbDb.collection(LEG_COLLECTION).doc(String(d.id));
+          legRef.get().then(x => { if (x.exists && x.data() && x.data().uid === k) return legRef.delete(); }).catch(() => {});
+          fbDb.collection(YO_COLLECTION).doc(k).delete().catch(err => {
+            celularesDocs[k] = d; renderCelulares(); updateCelularesBtn();
+            alert(err && err.code === "permission-denied"
+              ? "Firebase no deja liberar (faltan las reglas de yo_cajeros)."
+              : "No se pudo liberar. Revisá la conexión.");
+          });
+        });
+        row.querySelector(".acu-top").appendChild(b);
+        list.appendChild(row);
+      });
+    }
+    document.getElementById("btnCelulares").addEventListener("click", () => { renderCelulares(); celularesOverlay.classList.add("open"); });
+    document.getElementById("closeCelulares").addEventListener("click", () => celularesOverlay.classList.remove("open"));
+    celularesOverlay.addEventListener("click", (e) => { if (e.target === celularesOverlay) celularesOverlay.classList.remove("open"); });
+
     initApp().then(() => startFirebase());
 
     // Auto-actualización: cada cierto tiempo vuelve a traer el JSON del mes que se está viendo,
@@ -3458,6 +3643,7 @@
     function setAdminUI() {
       document.body.classList.toggle("is-admin", currentUser === "ADMIN");
       document.getElementById("btnUser").title = currentUser === "ADMIN" ? "Admin (salir)" : "Usuario";
+      try { updatePedidosBar(); } catch (e) {}
     }
     setAdminUI();
     const loginOverlay = document.getElementById("loginOverlay");
@@ -3604,7 +3790,8 @@
         if (!isAdmin) leaveInicialView();
         setAdminUI();
         updatePublishBtn();
-        if (isAdmin) startCjListener(); else stopCjListener();
+        if (isAdmin) { startCjListener(); startCelularesListener(); } else { stopCjListener(); stopCelularesListener(); }
+        if (u) startYoSync(u);
         if (u && u.isAnonymous) AVAILABLE_MESES.forEach(k => syncCj(k));
       });
     }

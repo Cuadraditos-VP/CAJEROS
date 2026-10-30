@@ -1982,6 +1982,16 @@
         el.appendChild(dot);
       }
     }
+    // Saca las notas automáticas de los acuerdos ("Cambio con …", "Cambio de franco con …")
+    function sinNotaCambio(text) {
+      return String(text || "").split(" · ").filter(x => !/^Cambio (de franco )?con /.test(x.trim())).join(" · ").trim();
+    }
+    function limpiarNotaCambio(pi, di) {
+      const c = getComment(pi, di);
+      if (!c) return;
+      const n = sinNotaCambio(c);
+      if (n !== c) setComment(pi, di, n);
+    }
     function setComment(pi, di, text) {
       const t = (text || "").trim();
       const key = pi + ":" + di;
@@ -3401,6 +3411,13 @@
           if (!confirm("¿Eliminar este acuerdo de la lista?\n\nLo que ya se cargó en los celulares de " + a.name + " y " + a.con.name + " queda como está.")) return;
           const prev = pedidosDocs[k];
           delete pedidosDocs[k];
+          // En este dispositivo, se borra la nota automática del acuerdo
+          [a.id, a.con && a.con.id].forEach(id => {
+            const pi = people.findIndex(pp => String(pp.id) === String(id));
+            if (pi < 0) return;
+            [a.dia, a.dia2].forEach(n => { if (n) limpiarNotaCambio(pi, Number(n) - 1); });
+          });
+          refreshAfterEdit();
           renderAcuerdos(); updatePedidosBar();
           fbDb.collection(PED_COLLECTION).doc(k).delete().catch(err => { pedidosDocs[k] = prev; renderAcuerdos(); updatePedidosBar(); errPed(err); });
         });
@@ -4230,6 +4247,8 @@
       const original = ORIGINAL_CODES[shiftPersonIdx][shiftDayIdx];
       people[shiftPersonIdx].codes[shiftDayIdx] = original;
       removeEdit(shiftPersonIdx, shiftDayIdx);
+      const cEl = document.getElementById("shiftComment");
+      if (cEl) cEl.value = sinNotaCambio(cEl.value);
       saveShiftComment();
       refreshAfterEdit();
       // La ventana permanece abierta. Solo "Listo" la cierra.

@@ -1445,6 +1445,13 @@
     .ped-note { margin-top: 10px; padding: 8px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
     .ped-note.ok { background: #dcfce7; color: #166534; }
     .ped-note.info { background: #f1f5f9; color: #475569; }
+    body.pedidos-on td.con-resp, .cal-day.con-resp, .cal-day-h.con-resp { box-shadow: inset 0 0 0 3px #ea580c !important; }
+    .ped-resp { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 8px 10px; border: 1px solid #fdba74; background: #fff7ed; border-radius: 8px; font-size: 0.82rem; font-weight: 600; color: #7c2d12; }
+    .ped-act { border: 0; border-radius: 8px; padding: 8px 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer; background: #ea580c; color: #fff; }
+    .ped-act.sec { background: #e2e8f0; color: #334155; }
+    .acu-row { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; margin-top: 6px; font-size: 0.82rem; color: #1e293b; }
+    .acu-row.done { opacity: .5; }
+    .acu-row .acu-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 700; }
     .ped-lbl { margin: 12px 0 6px; font-size: 0.75rem; font-weight: 700; color: #334155; }
     #yoList { display: grid; grid-template-columns: 1fr; gap: 4px; max-height: 55vh; overflow-y: auto; margin-top: 8px; }
     #yoList button { text-align: left; border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 8px; padding: 9px 10px; font-size: 0.85rem; font-weight: 600; color: #1e293b; cursor: pointer; }
@@ -1485,6 +1492,7 @@
     <div id="pedidosBar">
       <span id="pedidosLabel">Pedidos de cambio</span>
       <button type="button" id="btnYo">¿Quién sos?</button>
+      <button type="button" id="btnAcuerdos" class="admin-only">Acordados</button>
       <button type="button" id="btnSalirPedidos">Salir</button>
     </div>
     <div id="dayFilterBar">
@@ -1594,6 +1602,16 @@
         <button class="btn btn-clear" id="quitarPedido">Quitar pedido</button>
         <button class="btn btn-done" id="donePedido">Listo</button>
       </div>
+    </div>
+  </div>
+  <div class="palette-overlay" id="acuerdosOverlay">
+    <div class="palette-modal">
+      <div class="palette-header">
+        <h3>Cambios acordados</h3>
+        <button class="close-btn" id="closeAcuerdos" title="Cerrar">×</button>
+      </div>
+      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 6px">Cambios que los cajeros cerraron entre ellos. Pasalos al JSON de GitHub y marcalos como pasados.</p>
+      <div id="acuerdosList"></div>
     </div>
   </div>
   <div class="palette-overlay" id="yoOverlay">
@@ -2289,6 +2307,11 @@
       return "";
     }
     function markClass(pi, di) {
+      if (pedidosMode) {
+        const pp = people[pi];
+        const d = pp && pedidoDe(pp.id, di);
+        return d && d.respuestas && Object.keys(d.respuestas).length ? "con-resp" : "";
+      }
       const m = cellMark(pi, di);
       return m === "own" ? "edited" : (m === "pub" ? "changed" : (m === "cj" ? "cjchanged" : ""));
     }
@@ -2697,6 +2720,7 @@
       renderGroups();
       buildShiftGrid();
       applyColors();
+      if (typeof aplicarAcuerdos === "function") aplicarAcuerdos();
     }
 
     // Vuelve a traer el JSON del mes que se está viendo (auto-actualización)
@@ -2811,7 +2835,7 @@
     function pedDocId(mes, id, di) { return mes + "_" + id + "_" + (di + 1); }
     function pedidoDe(id, di) {
       const d = pedidosDocs[pedDocId(currentMes, id, di)];
-      return d && d.quiere ? d : null;
+      return d && d.quiere && d.estado !== "acordado" ? d : null;
     }
     function rebuildPedidos() {
       PED_CODES = people.map(p => {
@@ -2843,7 +2867,9 @@
     }
     function updatePedidosBar() {
       const me = miPersona();
-      const n = Object.values(pedidosDocs).filter(d => d && d.mes === currentMes && d.quiere).length;
+      const n = Object.values(pedidosDocs).filter(d => d && d.mes === currentMes && d.quiere && d.estado !== "acordado").length;
+      const nAcu = Object.values(pedidosDocs).filter(d => d && d.mes === currentMes && d.estado === "acordado" && !d.pasado).length;
+      document.getElementById("btnAcuerdos").textContent = "Acordados" + (nAcu ? " (" + nAcu + ")" : "");
       document.getElementById("pedidosLabel").textContent =
         "Pedidos · " + n + (n === 1 ? " pedido" : " pedidos") + (me ? " · sos " + me.p.name : "");
       document.getElementById("btnYo").textContent = me ? "Cambiar" : "¿Quién sos?";
@@ -2856,6 +2882,8 @@
           if (ch.type === "removed") delete pedidosDocs[ch.doc.id];
           else pedidosDocs[ch.doc.id] = ch.doc.data();
         });
+        aplicarAcuerdos();
+        if (document.getElementById("acuerdosOverlay").classList.contains("open")) renderAcuerdos();
         if (pedidosMode) {
           refreshAfterEdit();
           if (document.getElementById("pedidoOverlay").classList.contains("open") && pedPi !== null) openPedido(pedPi, pedDi);
@@ -2891,6 +2919,7 @@
           miLegajo = String(p.id);
           try { localStorage.setItem("cajYo", miLegajo); } catch (e) {}
           yoOverlay.classList.remove("open");
+          aplicarAcuerdos();
           updatePedidosBar();
           refreshAfterEdit();
         });
@@ -2938,6 +2967,23 @@
         body.innerHTML = '<div class="ped-info">' +
           (ped ? 'Pedís ' + pill(ped.quiere) + ' y ofrecés ' + pill(ped.ofrece || pedTengoSel) + '.'
                : 'Confirmá qué tenés ese día y elegí lo que necesitás.') + '</div>';
+        const resps = ped && ped.respuestas ? Object.values(ped.respuestas) : [];
+        if (resps.length) {
+          const lbl = document.createElement("div");
+          lbl.className = "ped-lbl";
+          lbl.textContent = resps.length === 1 ? "Le sirve a" : "Les sirve a";
+          body.appendChild(lbl);
+          resps.sort((a, b) => (a.t || 0) - (b.t || 0)).forEach(r => {
+            const row = document.createElement("div");
+            row.className = "ped-resp";
+            row.innerHTML = '<span>' + r.name + ' te da ' + (r.tiene || ped.quiere) + ', vos le das ' + (ped.ofrece || pedTengoSel) + '</span>';
+            const b = document.createElement("button");
+            b.type = "button"; b.className = "ped-act"; b.textContent = "Confirmar";
+            b.addEventListener("click", () => confirmarAcuerdo(pi, di, r));
+            row.appendChild(b);
+            body.appendChild(row);
+          });
+        }
         const opciones = ALL_SHIFT_CODES.filter(c => BLOCK_CODES.indexOf(c) < 0);
         const mkOpt = (code, sel, fn) => {
           const opt = document.createElement("div");
@@ -2970,19 +3016,132 @@
         return; // celda vacía de otro cajero: nada para mostrar
       }
       let nota = "";
+      let accion = null;
       if (me) {
         const yoTengo = actualDe(me.pi, di);
-        if (yoTengo && yoTengo === String(ped.quiere).toUpperCase()) {
+        const yaResp = ped.respuestas && ped.respuestas[me.p.id];
+        if (yaResp) {
+          nota = '<div class="ped-note ok">Le avisaste que te sirve. Falta que ' + p.name + ' confirme.</div>';
+          accion = { txt: "Ya no me sirve", sec: true, fn: () => responderPedido(pi, di, false) };
+        } else if (yoTengo && yoTengo === String(ped.quiere).toUpperCase()) {
           nota = '<div class="ped-note ok">Vos tenés ' + yoTengo + ' ese día: este cambio te sirve.</div>';
+          accion = { txt: "Me sirve", fn: () => responderPedido(pi, di, true) };
         } else {
           nota = '<div class="ped-note info">Ese día vos tenés ' + (yoTengo || "—") + '.</div>';
         }
       }
       body.innerHTML = '<div class="ped-info">Pide ' + pill(ped.quiere) + '<br>Ofrece ' + pill(ped.ofrece || ofrece) + '</div>' + nota;
+      if (accion) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "ped-act" + (accion.sec ? " sec" : ""); b.textContent = accion.txt;
+        b.style.cssText = "width:100%;margin-top:10px";
+        b.addEventListener("click", accion.fn);
+        body.appendChild(b);
+      }
       acts.style.display = "flex";
       document.getElementById("quitarPedido").style.display = "none";
       pedidoOverlay.classList.add("open");
     }
+    function errPed(err) {
+      refreshAfterEdit();
+      alert(err && err.code === "permission-denied"
+        ? "Firebase no deja guardar (revisá las reglas de pedidos_cajeros)."
+        : "No se pudo guardar. Revisá la conexión.");
+    }
+    // Otro cajero avisa que el pedido le sirve (o lo retira)
+    function responderPedido(pi, di, si) {
+      const me = miPersona();
+      if (!me) { openYo(); return; }
+      const id = pedDocId(currentMes, people[pi].id, di);
+      const d = pedidosDocs[id];
+      if (!d) return;
+      const u = fbAuth && fbAuth.currentUser;
+      const resp = Object.assign({}, d.respuestas || {});
+      if (si) resp[me.p.id] = { id: String(me.p.id), name: me.p.name, tiene: actualDe(me.pi, di), uid: u ? u.uid : "", t: Date.now() };
+      else delete resp[me.p.id];
+      d.respuestas = resp;
+      openPedido(pi, di);
+      refreshAfterEdit();
+      fbDb.collection(PED_COLLECTION).doc(id).update({ respuestas: resp }).catch(errPed);
+    }
+    // El que pidió confirma con uno de los que respondieron: queda como acuerdo cerrado
+    function confirmarAcuerdo(pi, di, r) {
+      const p = people[pi];
+      const id = pedDocId(currentMes, p.id, di);
+      const d = pedidosDocs[id];
+      if (!d) return;
+      const ofrece = d.ofrece || actualDe(pi, di);
+      const recibe = r.tiene || d.quiere;
+      if (!confirm("¿Confirmar el cambio del " + fechaTxt(di) + "?\n\n" + p.name + " pasa a " + recibe + "\n" + r.name + " pasa a " + ofrece + "\n\nSe carga en el celular de los dos. La programación oficial la actualiza el admin.")) return;
+      const t = Date.now();
+      const acuId = "acuerdo_" + id + "_" + t;
+      const acu = { mes: currentMes, dia: di + 1, estado: "acordado", t,
+        id: String(p.id), name: p.name, quiere: recibe, ofrece,
+        con: { id: String(r.id), name: r.name, tiene: recibe, recibe: ofrece } };
+      delete pedidosDocs[id];
+      pedidosDocs[acuId] = acu;
+      closePedido();
+      aplicarAcuerdos();
+      refreshAfterEdit();
+      const batch = fbDb.batch();
+      batch.set(fbDb.collection(PED_COLLECTION).doc(acuId), acu);
+      batch.delete(fbDb.collection(PED_COLLECTION).doc(id));
+      batch.commit().then(() => showShareToast("Cambio confirmado con " + r.name)).catch(errPed);
+    }
+    // Carga en ESTE celular los acuerdos donde participa quien lo usa (una sola vez cada uno)
+    function aplicarAcuerdos() {
+      if (!miLegajo) return;
+      let hecho = false;
+      Object.keys(pedidosDocs).forEach(k => {
+        const a = pedidosDocs[k];
+        if (!a || a.estado !== "acordado" || a.mes !== currentMes) return;
+        let code = null;
+        if (String(a.id) === String(miLegajo)) code = a.quiere;
+        else if (a.con && String(a.con.id) === String(miLegajo)) code = a.con.recibe;
+        if (!code) return;
+        const flag = "cajAcu:" + k + ":" + miLegajo;
+        try { if (localStorage.getItem(flag)) return; } catch (e) {}
+        const pi = people.findIndex(pp => String(pp.id) === String(miLegajo));
+        const di = Number(a.dia) - 1;
+        if (pi < 0 || !(di >= 0 && di < DAYS)) return;
+        people[pi].codes[di] = code;
+        if (code === ((ORIGINAL_CODES[pi] || [])[di] || "")) removeEdit(pi, di); else saveEdit(pi, di, code);
+        try { localStorage.setItem(flag, "1"); } catch (e) {}
+        hecho = true;
+      });
+      if (hecho) refreshAfterEdit();
+    }
+    // Lista de acordados para el admin
+    const acuerdosOverlay = document.getElementById("acuerdosOverlay");
+    function renderAcuerdos() {
+      const list = document.getElementById("acuerdosList");
+      const items = Object.keys(pedidosDocs).map(k => ({ k, a: pedidosDocs[k] }))
+        .filter(x => x.a && x.a.estado === "acordado" && x.a.mes === currentMes)
+        .sort((x, y) => (x.a.pasado ? 1 : 0) - (y.a.pasado ? 1 : 0) || x.a.dia - y.a.dia);
+      list.innerHTML = items.length ? "" : '<div class="ped-note info">No hay cambios acordados en ' + MES.nombre.toLowerCase() + '.</div>';
+      items.forEach(({ k, a }) => {
+        const row = document.createElement("div");
+        row.className = "acu-row" + (a.pasado ? " done" : "");
+        const di = Number(a.dia) - 1;
+        row.innerHTML = '<div class="acu-top"><span>' + (DAY_LABELS[di] ? fechaTxt(di) : a.dia) + '</span></div>' +
+          '<div>' + a.name + ': ' + a.ofrece + ' → ' + a.quiere + '</div>' +
+          '<div>' + a.con.name + ': ' + a.con.tiene + ' → ' + a.con.recibe + '</div>';
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "ped-act" + (a.pasado ? " sec" : "");
+        b.textContent = a.pasado ? "Pasado ✓" : "Ya lo pasé";
+        b.addEventListener("click", () => {
+          a.pasado = !a.pasado;
+          renderAcuerdos(); updatePedidosBar();
+          fbDb.collection(PED_COLLECTION).doc(k).update({ pasado: a.pasado }).catch(errPed);
+        });
+        row.querySelector(".acu-top").appendChild(b);
+        list.appendChild(row);
+      });
+    }
+    document.getElementById("btnAcuerdos").addEventListener("click", () => { renderAcuerdos(); acuerdosOverlay.classList.add("open"); });
+    document.getElementById("closeAcuerdos").addEventListener("click", () => acuerdosOverlay.classList.remove("open"));
+    acuerdosOverlay.addEventListener("click", (e) => { if (e.target === acuerdosOverlay) acuerdosOverlay.classList.remove("open"); });
+
     function guardarPedido(pi, di, code) {
       const p = people[pi];
       const id = pedDocId(currentMes, p.id, di);
@@ -3175,6 +3334,7 @@
     function startFirebase() {
       if (!fbReady || fbStarted) return;
       fbStarted = true;
+      startPedidos();
       document.body.classList.add("fb-on");
       fbDb.collection(FB_COLLECTION).onSnapshot(qs => {
         qs.docChanges().forEach(ch => {

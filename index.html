@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Cajeros v66</title>
+  <title>Cajeros v67</title>
   <meta name="theme-color" content="#1e3a5f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1425,6 +1425,31 @@
     .grp-card tbody td.blk[data-code="LIC"] { box-shadow: inset 0 2px 0 #111827, inset 0 -2px 0 #111827 !important; }
     /* Vista del día como en jefes: código más grande y sin negrita fuerte */
     body.day-view .day-table td.day-only { font-size: 1.05rem !important; font-weight: 600 !important; }
+    /* ===== PEDIDOS DE CAMBIO ===== */
+    .ped-btn { background: #ea580c; }
+    body.pedidos-on .ped-btn { background: #9a3412; box-shadow: 0 0 0 2px #fdba74; }
+    #pedidosBar {
+      display: none; width: 100%; max-width: 560px; margin: 0 auto 8px;
+      background: #fff7ed; border: 1px solid #fdba74; color: #9a3412;
+      border-radius: 8px; padding: 7px 10px; font-size: 0.8rem; font-weight: 600; text-align: center;
+    }
+    body.pedidos-on #pedidosBar { display: block; }
+    #pedidosBar button {
+      margin-left: 8px; border: 0; border-radius: 6px; padding: 4px 8px;
+      background: #ea580c; color: #fff; font-weight: 700; font-size: 0.72rem; cursor: pointer;
+    }
+    body.pedidos-on .grp-card { border-color: #ea580c; }
+    body.pedidos-on .grp-card td.mi-fila { background: #fff7ed !important; }
+    .ped-info { font-size: 0.95rem; color: #1e293b; line-height: 1.6; }
+    .ped-info .pill { display: inline-block; min-width: 44px; padding: 3px 10px; border-radius: 6px; font-weight: 800; text-align: center; border: 1px solid rgba(0,0,0,.15); }
+    .ped-note { margin-top: 10px; padding: 8px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+    .ped-note.ok { background: #dcfce7; color: #166534; }
+    .ped-note.info { background: #f1f5f9; color: #475569; }
+    .ped-lbl { margin: 12px 0 6px; font-size: 0.75rem; font-weight: 700; color: #334155; }
+    #yoList { display: grid; grid-template-columns: 1fr; gap: 4px; max-height: 55vh; overflow-y: auto; margin-top: 8px; }
+    #yoList button { text-align: left; border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 8px; padding: 9px 10px; font-size: 0.85rem; font-weight: 600; color: #1e293b; cursor: pointer; }
+    #yoList button span { color: #64748b; font-weight: 500; margin-left: 6px; font-size: 0.75rem; }
+    #yoSearch { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px; font-size: 16px; }
 </style>
 </head>
 <body class="month-view">
@@ -1452,10 +1477,16 @@
         <button type="button" id="btnExportJson" class="json-btn admin-only" title="Exportar JSON">↓ JSON</button>
         <button type="button" id="btnCopyJson" class="json-btn admin-only" title="Copiar JSON al portapapeles">⧉ Copiar</button>
         <button type="button" id="btnImportJson" class="json-btn admin-only" title="Importar JSON">↑ JSON</button>
+        <button type="button" id="btnPedidos" class="json-btn fb-only ped-btn" title="Pedidos de cambio de turno">P</button>
         <button type="button" id="btnPublish" class="json-btn admin-only fb-only publish-btn" title="Publicar colores y feriados para todos (los turnos nunca se publican desde acá)">⬆ Publicar</button>
         <input id="importJsonFile" type="file" accept="application/json,.json" hidden>
       </div>
     </header>
+    <div id="pedidosBar">
+      <span id="pedidosLabel">Pedidos de cambio</span>
+      <button type="button" id="btnYo">¿Quién sos?</button>
+      <button type="button" id="btnSalirPedidos">Salir</button>
+    </div>
     <div id="dayFilterBar">
       <span id="dayFilterLabel">Sólo un día</span>
       <button type="button" id="btnClearDay">Ver mes</button>
@@ -1546,6 +1577,34 @@
         <button class="btn btn-clear" id="resetColor">Restablecer este</button>
         <button class="btn btn-done" id="doneColors">Listo</button>
       </div>
+    </div>
+  </div>
+  <div class="palette-overlay" id="pedidoOverlay">
+    <div class="palette-modal">
+      <div class="palette-header">
+        <h3 id="pedidoTitle">—</h3>
+        <button class="close-btn" id="closePedido" title="Cerrar">×</button>
+      </div>
+      <div id="pedidoBody"></div>
+      <div id="pedidoTengoLbl" class="ped-lbl">Ese día tengo</div>
+      <div class="shift-grid" id="pedidoTengo"></div>
+      <div id="pedidoGridLbl" class="ped-lbl">Necesito</div>
+      <div class="shift-grid" id="pedidoGrid"></div>
+      <div class="palette-actions" id="pedidoActions">
+        <button class="btn btn-clear" id="quitarPedido">Quitar pedido</button>
+        <button class="btn btn-done" id="donePedido">Listo</button>
+      </div>
+    </div>
+  </div>
+  <div class="palette-overlay" id="yoOverlay">
+    <div class="palette-modal">
+      <div class="palette-header">
+        <h3>¿Quién sos?</h3>
+        <button class="close-btn" id="closeYo" title="Cerrar">×</button>
+      </div>
+      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 8px">Elegí tu nombre una sola vez. Queda guardado en este celular y es la fila donde podés pedir cambios.</p>
+      <input id="yoSearch" type="search" placeholder="Buscar apellido o legajo" autocomplete="off">
+      <div id="yoList"></div>
     </div>
   </div>
   <div class="palette-overlay" id="feriadosOverlay">
@@ -1866,7 +1925,7 @@
       return v ? String(v) : "";
     }
     function markComment(el, pi, di) {
-      if (!el) return;
+      if (!el || pedidosMode) return;
       const cmt = getComment(pi, di);
       if (!cmt) return;
       el.classList.add("has-comment");
@@ -2210,6 +2269,7 @@
 
     // Según el modo de vista actual, de dónde sacar los códigos de una persona
     function codesFor(pi) {
+      if (pedidosMode) return PED_CODES[pi] || [];
       if (viewMode === "inicial") return INITIAL_CODES[pi] || [];
       if (viewMode === "cj") return CJ_CODES[pi] || ORIGINAL_CODES[pi] || [];
       if (viewMode === "oficial") return ORIGINAL_CODES[pi] || [];
@@ -2219,6 +2279,7 @@
     // Marca de una celda (como en jefes): "own" = cambio propio sin publicar (ámbar),
     // "pub" = cambio ya publicado respecto de la programación inicial del mes (azul), "" = sin cambios.
     function cellMark(pi, di) {
+      if (pedidosMode) return "";
       if (viewMode === "inicial") return "";
       if (viewMode === "cj" && CJ_MARKS[pi + ":" + di]) return "cj";
       const shown = (codesFor(pi)[di] || "");
@@ -2248,9 +2309,10 @@
     function buildRow(person, pi) {
       const tr = document.createElement("tr");
       tr.dataset.pi = String(pi);
+      const miFila = pedidosMode && miLegajo && String(person.id) === String(miLegajo) ? " mi-fila" : "";
       tr.innerHTML = `
-        <td class="sticky-col person-id" data-pi="${pi}">${person.id}</td>
-        <td class="sticky-col-2 person-name" data-pi="${pi}">${person.name}</td>
+        <td class="sticky-col person-id${miFila}" data-pi="${pi}">${person.id}</td>
+        <td class="sticky-col-2 person-name${miFila}" data-pi="${pi}">${person.name}</td>
       `;
       const codesArr = codesFor(pi);
       const onlyDay = selectedDay !== null;
@@ -2440,7 +2502,8 @@
     }
 
     function renderGroups() {
-      if (viewMode === "cj") rebuildCj();
+      if (pedidosMode) rebuildPedidos();
+      else if (viewMode === "cj") rebuildCj();
       if (selectedDay === null) {
         const wrapEl = document.getElementById("scheduleWrap");
         const keepTop = wrapEl.scrollTop, keepLeft = wrapEl.scrollLeft;
@@ -2732,6 +2795,238 @@
       switchMonth(want);
       fillMonthSelect();
     }
+    // ========== PEDIDOS DE CAMBIO DE TURNO ==========
+    // Colección "pedidos_cajeros": un documento por pedido (mes_legajo_día). Todos leen y escriben.
+    // Cada pedido dice qué turno BUSCA el cajero; lo que OFRECE es su turno oficial de ese día.
+    // Nunca modifica la programación oficial.
+    const PED_COLLECTION = "pedidos_cajeros";
+    let pedidosMode = false;
+    let PED_CODES = [];
+    const pedidosDocs = {};   // docId -> datos
+    let pedUnsub = null;
+    let miLegajo = "";
+    try { miLegajo = localStorage.getItem("cajYo") || ""; } catch (e) {}
+    let pedPi = null, pedDi = null;
+
+    function pedDocId(mes, id, di) { return mes + "_" + id + "_" + (di + 1); }
+    function pedidoDe(id, di) {
+      const d = pedidosDocs[pedDocId(currentMes, id, di)];
+      return d && d.quiere ? d : null;
+    }
+    function rebuildPedidos() {
+      PED_CODES = people.map(p => {
+        const arr = Array(DAYS).fill("");
+        for (let di = 0; di < DAYS; di++) {
+          const d = pedidoDe(p.id, di);
+          if (d) arr[di] = String(d.quiere).toUpperCase();
+        }
+        return arr;
+      });
+    }
+    function miPersona() {
+      if (!miLegajo) return null;
+      const pi = people.findIndex(p => String(p.id) === String(miLegajo));
+      return pi < 0 ? null : { pi, p: people[pi] };
+    }
+    function oficialDe(pi, di) { return String(((ORIGINAL_CODES[pi] || [])[di]) || "").toUpperCase(); }
+    // Lo que figura en ESTE celular (programación oficial + cambios cargados acá)
+    function actualDe(pi, di) { return String(((people[pi] && people[pi].codes) || [])[di] || "").toUpperCase(); }
+    let pedTengoSel = "";
+    function pill(code) {
+      const c = String(code || "").toUpperCase();
+      if (!c) return '<span class="pill" style="background:#f1f5f9;color:#94a3b8">·</span>';
+      const bg = colorMap[c] || "#e2e8f0";
+      return '<span class="pill" style="background:' + bg + ';color:' + fgFor(c, bg) + '">' + c + "</span>";
+    }
+    function fechaTxt(di) {
+      return DAY_LABELS[di].split(" ")[0] + " " + (di + 1) + "/" + MES.m;
+    }
+    function updatePedidosBar() {
+      const me = miPersona();
+      const n = Object.values(pedidosDocs).filter(d => d && d.mes === currentMes && d.quiere).length;
+      document.getElementById("pedidosLabel").textContent =
+        "Pedidos · " + n + (n === 1 ? " pedido" : " pedidos") + (me ? " · sos " + me.p.name : "");
+      document.getElementById("btnYo").textContent = me ? "Cambiar" : "¿Quién sos?";
+    }
+
+    function startPedidos() {
+      if (pedUnsub || !fbReady) return;
+      pedUnsub = fbDb.collection(PED_COLLECTION).onSnapshot(qs => {
+        qs.docChanges().forEach(ch => {
+          if (ch.type === "removed") delete pedidosDocs[ch.doc.id];
+          else pedidosDocs[ch.doc.id] = ch.doc.data();
+        });
+        if (pedidosMode) {
+          refreshAfterEdit();
+          if (document.getElementById("pedidoOverlay").classList.contains("open") && pedPi !== null) openPedido(pedPi, pedDi);
+        }
+        updatePedidosBar();
+      }, err => console.warn("Pedidos:", err));
+    }
+
+    function setPedidosMode(on) {
+      pedidosMode = on;
+      document.body.classList.toggle("pedidos-on", on);
+      if (on) { startPedidos(); updatePedidosBar(); }
+      refreshAfterEdit();
+      if (on && !miPersona()) openYo();
+    }
+    document.getElementById("btnPedidos").addEventListener("click", () => setPedidosMode(!pedidosMode));
+    document.getElementById("btnSalirPedidos").addEventListener("click", () => setPedidosMode(false));
+
+    // --- ¿Quién sos? ---
+    const yoOverlay = document.getElementById("yoOverlay");
+    function renderYoList() {
+      const q = document.getElementById("yoSearch").value.trim().toLowerCase();
+      const list = document.getElementById("yoList");
+      list.innerHTML = "";
+      people.forEach(p => {
+        const txt = (p.name + " " + p.id).toLowerCase();
+        if (q && txt.indexOf(q) < 0) return;
+        const b = document.createElement("button");
+        b.type = "button";
+        b.innerHTML = p.name + "<span>" + p.id + "</span>";
+        b.addEventListener("click", () => {
+          if (!confirm("¿Sos " + p.name + " (" + p.id + ")?")) return;
+          miLegajo = String(p.id);
+          try { localStorage.setItem("cajYo", miLegajo); } catch (e) {}
+          yoOverlay.classList.remove("open");
+          updatePedidosBar();
+          refreshAfterEdit();
+        });
+        list.appendChild(b);
+      });
+    }
+    function openYo() {
+      document.getElementById("yoSearch").value = "";
+      renderYoList();
+      yoOverlay.classList.add("open");
+    }
+    document.getElementById("yoSearch").addEventListener("input", renderYoList);
+    document.getElementById("btnYo").addEventListener("click", openYo);
+    document.getElementById("closeYo").addEventListener("click", () => yoOverlay.classList.remove("open"));
+
+    // --- Cuadro de pedido ---
+    const pedidoOverlay = document.getElementById("pedidoOverlay");
+    function openPedido(pi, di) {
+      const p = people[pi];
+      if (!p) return;
+      pedPi = pi; pedDi = di;
+      const me = miPersona();
+      const esMio = me && me.pi === pi;
+      const ped = pedidoDe(p.id, di);
+      const ofrece = oficialDe(pi, di);
+      const body = document.getElementById("pedidoBody");
+      const grid = document.getElementById("pedidoGrid");
+      const acts = document.getElementById("pedidoActions");
+      document.getElementById("pedidoTitle").textContent = p.name + " · " + fechaTxt(di);
+      grid.innerHTML = "";
+
+      const tengoEl = document.getElementById("pedidoTengo");
+      tengoEl.innerHTML = "";
+      const showGrids = !!esMio;
+      ["pedidoTengoLbl", "pedidoTengo", "pedidoGridLbl", "pedidoGrid"].forEach(x => {
+        document.getElementById(x).style.display = showGrids ? "" : "none";
+      });
+
+      if (esMio) {
+        if (pedPi !== pi || pedDi !== di || !pedTengoSel || pedidoOverlay.dataset.k !== pi + ":" + di) {
+          pedTengoSel = ped && ped.ofrece ? String(ped.ofrece).toUpperCase() : actualDe(pi, di);
+        }
+        pedidoOverlay.dataset.k = pi + ":" + di;
+        pedPi = pi; pedDi = di;
+        body.innerHTML = '<div class="ped-info">' +
+          (ped ? 'Pedís ' + pill(ped.quiere) + ' y ofrecés ' + pill(ped.ofrece || pedTengoSel) + '.'
+               : 'Confirmá qué tenés ese día y elegí lo que necesitás.') + '</div>';
+        const opciones = ALL_SHIFT_CODES.filter(c => BLOCK_CODES.indexOf(c) < 0);
+        const mkOpt = (code, sel, fn) => {
+          const opt = document.createElement("div");
+          opt.className = "shift-option" + (sel ? " selected" : "");
+          opt.textContent = code;
+          const bg = colorMap[code];
+          if (bg) { opt.style.background = bg; opt.style.color = fgFor(code, bg); }
+          opt.addEventListener("click", fn);
+          return opt;
+        };
+        const tengoList = opciones.slice();
+        if (pedTengoSel && tengoList.indexOf(pedTengoSel) < 0) tengoList.unshift(pedTengoSel);
+        tengoList.forEach(code => tengoEl.appendChild(mkOpt(code, code === pedTengoSel, () => {
+          pedTengoSel = code;
+          if (ped && ped.quiere === code) { openPedido(pi, di); return; }
+          if (ped) guardarPedido(pi, di, ped.quiere); else openPedido(pi, di);
+        })));
+        opciones.forEach(code => {
+          if (code === pedTengoSel) return;
+          grid.appendChild(mkOpt(code, ped && ped.quiere === code, () => guardarPedido(pi, di, code)));
+        });
+        document.getElementById("quitarPedido").style.display = ped ? "" : "none";
+        acts.style.display = "flex";
+        pedidoOverlay.classList.add("open");
+        return;
+      }
+
+      if (!ped) {
+        if (!me) { openYo(); return; }
+        return; // celda vacía de otro cajero: nada para mostrar
+      }
+      let nota = "";
+      if (me) {
+        const yoTengo = actualDe(me.pi, di);
+        if (yoTengo && yoTengo === String(ped.quiere).toUpperCase()) {
+          nota = '<div class="ped-note ok">Vos tenés ' + yoTengo + ' ese día: este cambio te sirve.</div>';
+        } else {
+          nota = '<div class="ped-note info">Ese día vos tenés ' + (yoTengo || "—") + '.</div>';
+        }
+      }
+      body.innerHTML = '<div class="ped-info">Pide ' + pill(ped.quiere) + '<br>Ofrece ' + pill(ped.ofrece || ofrece) + '</div>' + nota;
+      acts.style.display = "flex";
+      document.getElementById("quitarPedido").style.display = "none";
+      pedidoOverlay.classList.add("open");
+    }
+    function guardarPedido(pi, di, code) {
+      const p = people[pi];
+      const id = pedDocId(currentMes, p.id, di);
+      const u = fbAuth && fbAuth.currentUser;
+      const data = { mes: currentMes, id: String(p.id), name: p.name, dia: di + 1, quiere: code, ofrece: pedTengoSel || actualDe(pi, di), uid: u ? u.uid : "", t: Date.now() };
+      pedidosDocs[id] = data;
+      openPedido(pi, di);
+      refreshAfterEdit();
+      fbDb.collection(PED_COLLECTION).doc(id).set(data).catch(err => {
+        delete pedidosDocs[id];
+        refreshAfterEdit();
+        alert(err && err.code === "permission-denied"
+          ? "Firebase no deja guardar el pedido (faltan las reglas de pedidos_cajeros)."
+          : "No se pudo guardar el pedido. Revisá la conexión.");
+      });
+    }
+    document.getElementById("quitarPedido").addEventListener("click", () => {
+      if (pedPi === null) return;
+      const id = pedDocId(currentMes, people[pedPi].id, pedDi);
+      const prev = pedidosDocs[id];
+      delete pedidosDocs[id];
+      refreshAfterEdit();
+      closePedido();
+      fbDb.collection(PED_COLLECTION).doc(id).delete().catch(() => {
+        if (prev) pedidosDocs[id] = prev;
+        refreshAfterEdit();
+        alert("No se pudo quitar el pedido.");
+      });
+    });
+    function closePedido() { pedidoOverlay.classList.remove("open"); pedPi = null; pedDi = null; pedTengoSel = ""; pedidoOverlay.dataset.k = ""; }
+    document.getElementById("closePedido").addEventListener("click", closePedido);
+    document.getElementById("donePedido").addEventListener("click", closePedido);
+    pedidoOverlay.addEventListener("click", (e) => { if (e.target === pedidoOverlay) closePedido(); });
+
+    // En modo pedidos, tocar una celda de día abre el cuadro del pedido
+    document.addEventListener("click", (e) => {
+      if (!pedidosMode) return;
+      if (e.target.closest(".palette-overlay")) return;
+      if (e.target.closest("thead")) return;
+      const td = e.target.closest("td[data-pi][data-di]");
+      if (!td) return;
+      openPedido(Number(td.dataset.pi), Number(td.dataset.di));
+    });
+
     initApp().then(() => startFirebase());
 
     // Auto-actualización: cada cierto tiempo vuelve a traer el JSON del mes que se está viendo,
@@ -3214,6 +3509,7 @@
         : ("Horas extra de este turno: 0 h" + (code ? " · " + code : ""));
     }
     function openShiftPicker(pi, di) {
+      if (pedidosMode) { openPedido(pi, di); return; }
       if (viewMode !== "actual") return;
       shiftPersonIdx = pi;
       shiftDayIdx = di;
@@ -3341,6 +3637,7 @@
     }
 
     document.addEventListener("click", (e) => {
+      if (pedidosMode) return;
       if (viewMode !== "actual") return;
       if (e.target.closest("#shiftOverlay")) return;
       if (e.target.closest("thead")) return;

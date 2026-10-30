@@ -3095,9 +3095,9 @@
       Object.keys(pedidosDocs).forEach(k => {
         const a = pedidosDocs[k];
         if (!a || a.estado !== "acordado" || a.mes !== currentMes) return;
-        let code = null;
-        if (String(a.id) === String(miLegajo)) code = a.quiere;
-        else if (a.con && String(a.con.id) === String(miLegajo)) code = a.con.recibe;
+        let code = null, nota = "";
+        if (String(a.id) === String(miLegajo)) { code = a.quiere; nota = "Cambio con " + (a.con && a.con.name) + " (" + a.ofrece + " → " + a.quiere + ")"; }
+        else if (a.con && String(a.con.id) === String(miLegajo)) { code = a.con.recibe; nota = "Cambio con " + a.name + " (" + a.con.tiene + " → " + a.con.recibe + ")"; }
         if (!code) return;
         const flag = "cajAcu:" + k + ":" + miLegajo;
         try { if (localStorage.getItem(flag)) return; } catch (e) {}
@@ -3106,6 +3106,8 @@
         if (pi < 0 || !(di >= 0 && di < DAYS)) return;
         people[pi].codes[di] = code;
         if (code === ((ORIGINAL_CODES[pi] || [])[di] || "")) removeEdit(pi, di); else saveEdit(pi, di, code);
+        const prevC = getComment(pi, di);
+        if (prevC.indexOf(nota) < 0) setComment(pi, di, prevC ? prevC + " · " + nota : nota);
         try { localStorage.setItem(flag, "1"); } catch (e) {}
         hecho = true;
       });
@@ -3134,7 +3136,19 @@
           renderAcuerdos(); updatePedidosBar();
           fbDb.collection(PED_COLLECTION).doc(k).update({ pasado: a.pasado }).catch(errPed);
         });
-        row.querySelector(".acu-top").appendChild(b);
+        const del = document.createElement("button");
+        del.type = "button"; del.className = "ped-act sec"; del.textContent = "Eliminar";
+        del.addEventListener("click", () => {
+          if (!confirm("¿Eliminar este acuerdo de la lista?\n\nLo que ya se cargó en los celulares de " + a.name + " y " + a.con.name + " queda como está.")) return;
+          const prev = pedidosDocs[k];
+          delete pedidosDocs[k];
+          renderAcuerdos(); updatePedidosBar();
+          fbDb.collection(PED_COLLECTION).doc(k).delete().catch(err => { pedidosDocs[k] = prev; renderAcuerdos(); updatePedidosBar(); errPed(err); });
+        });
+        const btns = document.createElement("span");
+        btns.style.cssText = "display:flex;gap:6px";
+        btns.appendChild(b); btns.appendChild(del);
+        row.querySelector(".acu-top").appendChild(btns);
         list.appendChild(row);
       });
     }

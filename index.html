@@ -2857,15 +2857,32 @@
       const d = pedidosDocs[pedDocId(currentMes, id, di)];
       return d && d.quiere && d.estado !== "acordado" ? d : null;
     }
+    // PED_REF["pi:di"] = día (0-based) del pedido de franco que ofrece ese día
+    let PED_REF = {};
     function rebuildPedidos() {
-      PED_CODES = people.map(p => {
+      PED_REF = {};
+      PED_CODES = people.map((p, pi) => {
         const arr = Array(DAYS).fill("");
         for (let di = 0; di < DAYS; di++) {
           const d = pedidoDe(p.id, di);
-          if (d) arr[di] = esFranco(d) ? "F" : String(d.ofrece || "?").toUpperCase();
+          if (d) arr[di] = String(d.ofrece || "?").toUpperCase();
+        }
+        for (let di = 0; di < DAYS; di++) {
+          const d = pedidoDe(p.id, di);
+          if (!esFranco(d)) continue;
+          d.francos.forEach(n => {
+            const od = n - 1;
+            if (od < 0 || od >= DAYS || arr[od]) return;
+            arr[od] = "F";
+            PED_REF[pi + ":" + od] = di;
+          });
         }
         return arr;
       });
+    }
+    function refDia(pi, di) {
+      const r = PED_REF[pi + ":" + di];
+      return r == null ? null : r;
     }
     function miPersona() {
       if (!miLegajo) return null;
@@ -2888,14 +2905,30 @@
     }
     function diaCorto(n) { return DAY_LABELS[n - 1] ? DAY_LABELS[n - 1].split(" ")[0] + " " + n + "/" + MES.m : String(n); }
     function marcarCeldaPedido(td, id, di) {
-      const d = pedidoDe(id, di);
-      if (!d) return;
-      const fr = esFranco(d);
-      const pide = fr ? String(d.ofrece || "").toUpperCase() : String(d.quiere || "").toUpperCase();
-      td.classList.add("ped-cell");
-      if (fr && td.firstChild && td.firstChild.nodeType === 3) {
-        td.firstChild.nodeValue = d.francos.length === 1 ? "F " + d.francos[0] : "F×" + d.francos.length;
+      let d = pedidoDe(id, di);
+      const me = miPersona();
+      if (!d) {
+        // Día de franco ofrecido: arriba F, abajo "x 11" (por el día que pide)
+        const pi = people.findIndex(pp => String(pp.id) === String(id));
+        const src = refDia(pi, di);
+        if (src == null) return;
+        d = pedidoDe(id, src);
+        if (!d) return;
+        td.classList.add("ped-cell");
+        const sp = document.createElement("span");
+        sp.className = "ped-da";
+        const cubre = String(d.ofrece || "").toUpperCase();
+        sp.textContent = (cubre ? cubre + " " : "x ") + (src + 1);
+        const bgC = colorMap[cubre] || "#e2e8f0";
+        sp.style.background = bgC;
+        sp.style.color = cubre ? fgFor(cubre, bgC) : "#334155";
+        td.appendChild(sp);
+        if (me && String(me.p.id) !== String(id) && actualDe(me.pi, src) === "F" && trabaja(actualDe(me.pi, di))) td.classList.add("te-sirve");
+        return;
       }
+      const fr = esFranco(d);
+      const pide = String(d.quiere || "").toUpperCase();
+      td.classList.add("ped-cell");
       const sp = document.createElement("span");
       sp.className = "ped-da";
       sp.textContent = pide || "·";
@@ -2904,7 +2937,6 @@
       sp.style.color = pide ? fgFor(pide, bg) : "#94a3b8";
       td.appendChild(sp);
       // Verde: a quien mira le sirve (ese día tiene justo el turno que se pide)
-      const me = miPersona();
       if (me && String(me.p.id) !== String(id)) {
         if (fr ? francosQueSirven(d, di, me).length : actualDe(me.pi, di) === pide) td.classList.add("te-sirve");
       }
@@ -2993,6 +3025,7 @@
     function openPedido(pi, di) {
       const p = people[pi];
       if (!p) return;
+      if (!pedidoDe(p.id, di) && refDia(pi, di) != null) di = refDia(pi, di);
       pedPi = pi; pedDi = di;
       const me = miPersona();
       const esMio = me && me.pi === pi;

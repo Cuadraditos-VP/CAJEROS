@@ -1491,8 +1491,7 @@
         <button type="button" id="btnUser" class="user-btn" title="Usuario" aria-label="Usuario">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5z"/></svg>
         </button>
-        <button id="btnOriginalView" class="view-original-btn" title="Actual">A</button>
-        <button type="button" id="btnToggleNames" class="names-toggle-btn" title="Ocultar nombres">N</button>
+        <button id="btnOriginalView" class="view-original-btn admin-only" title="Actual">A</button>
         <select id="monthSelect" class="month-select" title="Mes" aria-label="Mes" style="display:none"></select>
         <h1><span class="title-full" id="titleFull">PROGRAMACIÓN CAJEROS</span><span class="title-short" id="titleShort"></span></h1>
         <button type="button" id="btnFeriados" class="fer-btn admin-only" title="Marcar feriados">Fer</button>
@@ -3463,7 +3462,7 @@
     setAdminUI();
     const loginOverlay = document.getElementById("loginOverlay");
     function leaveInicialView() {
-      if (viewMode === "inicial" || viewMode === "cj") {
+      if (viewMode !== "actual") {
         viewMode = "actual";
         btnOriginalView.textContent = "A";
         btnOriginalView.title = "Actual (editable)";
@@ -3494,7 +3493,7 @@
         if (confirm("¿Cerrar sesión de admin?")) {
           currentUser = "";
           sessionStorage.removeItem("cajerosUser");
-          if (viewMode === "inicial") {
+          if (viewMode !== "actual") {
             viewMode = "actual";
             btnOriginalView.textContent = "A";
             btnOriginalView.title = "Actual (editable)";
@@ -4112,9 +4111,8 @@
     const VIEW_MODE_COLOR = { actual: "#7c3aed", oficial: "#5b21b6", inicial: "#0f766e", cj: "#9333ea" };
     const btnOriginalView = document.getElementById("btnOriginalView");
     btnOriginalView.addEventListener("click", () => {
-      const order = currentUser === "ADMIN"
-        ? VIEW_MODE_ORDER.filter(m => m !== "cj" || fbReady)
-        : ["actual", "oficial"];
+      if (currentUser !== "ADMIN") return;
+      const order = VIEW_MODE_ORDER.filter(m => m !== "cj" || fbReady);
       const next = order[(order.indexOf(viewMode) + 1) % order.length];
       viewMode = next;
       btnOriginalView.textContent = VIEW_MODE_LABEL[next];
@@ -4124,25 +4122,9 @@
     });
 
     // Toggle: ocultar apellido, dejar solo legajo
-    const btnToggleNames = document.getElementById("btnToggleNames");
-    let namesHidden = false;
-    try { namesHidden = localStorage.getItem("cajerosHideNames") === "1"; } catch (e) {}
-    function applyNamesHidden() {
-      document.body.classList.toggle("names-hidden", namesHidden);
-      if (btnToggleNames) {
-        btnToggleNames.textContent = namesHidden ? "L" : "N";
-        btnToggleNames.title = namesHidden ? "Mostrar nombres" : "Ocultar nombres";
-        btnToggleNames.classList.toggle("on", namesHidden);
-      }
-    }
-    applyNamesHidden();
-    if (btnToggleNames) {
-      btnToggleNames.addEventListener("click", () => {
-        namesHidden = !namesHidden;
-        try { localStorage.setItem("cajerosHideNames", namesHidden ? "1" : "0"); } catch (e) {}
-        applyNamesHidden();
-      });
-    }
+    // Nombres siempre visibles (se quitó el botón N/L)
+    try { localStorage.removeItem("cajerosHideNames"); } catch (e) {}
+    document.body.classList.remove("names-hidden");
 
     const personOverlay = document.getElementById("personOverlay");
     const personCalTitle = document.getElementById("personCalTitle");

@@ -1445,13 +1445,29 @@
     .ped-note { margin-top: 10px; padding: 8px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
     .ped-note.ok { background: #dcfce7; color: #166534; }
     .ped-note.info { background: #f1f5f9; color: #475569; }
-    body.pedidos-on td.con-resp, .cal-day.con-resp, .cal-day-h.con-resp { box-shadow: inset 0 0 0 3px #ea580c !important; }
+    .cal-day.con-resp, .cal-day-h.con-resp { box-shadow: inset 0 0 0 3px #ea580c !important; }
     .ped-resp { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 8px 10px; border: 1px solid #fdba74; background: #fff7ed; border-radius: 8px; font-size: 0.82rem; font-weight: 600; color: #7c2d12; }
     .ped-act { border: 0; border-radius: 8px; padding: 8px 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer; background: #ea580c; color: #fff; }
     .ped-act.sec { background: #e2e8f0; color: #334155; }
     .acu-row { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; margin-top: 6px; font-size: 0.82rem; color: #1e293b; }
     .acu-row.done { opacity: .5; }
     .acu-row .acu-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 700; }
+    body.pedidos-on td.ped-cell { position: relative; padding-bottom: 13px !important; vertical-align: top; line-height: 1.25; }
+    td.ped-cell .ped-da {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 13px;
+      font-size: 0.58rem; font-weight: 700; line-height: 13px; text-align: center;
+      border-top: 1px solid rgba(0,0,0,.18); pointer-events: none;
+    }
+    body.pedidos-on td.te-sirve::after, body.pedidos-on td.con-resp::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; box-sizing: border-box;
+    }
+    body.pedidos-on td.te-sirve::after { border: 3px solid #16a34a; }
+    body.pedidos-on td.con-resp::before { inset: auto; top: 2px; left: 2px; width: 7px; height: 7px; border-radius: 50%; background: #ea580c; box-shadow: 0 0 0 1.5px #fff; }
+    .fr-opt { padding: 10px 4px; border-radius: 8px; border: 2px solid #e2e8f0; background: #f8fafc; font-weight: 800; font-size: 0.85rem; text-align: center; cursor: pointer; color: #1e293b; }
+    .fr-opt.selected { background: #DF7272; border-color: #2563eb; color: #fff; box-shadow: 0 0 0 2px rgba(37,99,235,0.4); }
+    .fr-opt small { display: block; font-size: 0.6rem; font-weight: 600; opacity: .8; }
+    .ped-opc { margin-top: 8px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.82rem; color: #1e293b; }
+    .ped-opc.ok { border-color: #86efac; background: #f0fdf4; }
     .ped-lbl { margin: 12px 0 6px; font-size: 0.75rem; font-weight: 700; color: #334155; }
     #yoList { display: grid; grid-template-columns: 1fr; gap: 4px; max-height: 55vh; overflow-y: auto; margin-top: 8px; }
     #yoList button { text-align: left; border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 8px; padding: 9px 10px; font-size: 0.85rem; font-weight: 600; color: #1e293b; cursor: pointer; }
@@ -1598,6 +1614,8 @@
       <div class="shift-grid" id="pedidoTengo"></div>
       <div id="pedidoGridLbl" class="ped-lbl">Necesito</div>
       <div class="shift-grid" id="pedidoGrid"></div>
+      <div id="pedidoFrancosLbl" class="ped-lbl" style="display:none">Ofrezco mi franco del día (podés marcar varios)</div>
+      <div class="shift-grid" id="pedidoFrancos" style="display:none"></div>
       <div class="palette-actions" id="pedidoActions">
         <button class="btn btn-clear" id="quitarPedido">Quitar pedido</button>
         <button class="btn btn-done" id="donePedido">Listo</button>
@@ -2349,7 +2367,7 @@
         td.dataset.pi = String(pi);
         td.dataset.di = String(di);
 
-        if (isBlock && !onlyDay) {
+        if (isBlock && !onlyDay && !pedidosMode) {
           let runEnd = di;
           while (
             runEnd + 1 < codesArr.length &&
@@ -2384,6 +2402,7 @@
           td.textContent = code;
         }
         markComment(td, pi, di);
+        if (pedidosMode && code) marcarCeldaPedido(td, person.id, di);
         if (onlyDay) td.classList.add("day-only");
         if (WEEK_START_DAYS.includes(di)) td.classList.add("week-sep");
         td.style.cursor = viewMode !== "actual" ? "default" : "pointer";
@@ -2425,6 +2444,7 @@
         tdCode.textContent = code;
       }
       markComment(tdCode, pi, selectedDay);
+      if (pedidosMode && code) marcarCeldaPedido(tdCode, person.id, selectedDay);
       tdCode.style.cursor = viewMode !== "actual" ? "default" : "pointer";
       const mkD = markClass(pi, selectedDay);
       if (mkD) tdCode.classList.add(mkD);
@@ -2842,7 +2862,7 @@
         const arr = Array(DAYS).fill("");
         for (let di = 0; di < DAYS; di++) {
           const d = pedidoDe(p.id, di);
-          if (d) arr[di] = String(d.quiere).toUpperCase();
+          if (d) arr[di] = esFranco(d) ? "F" : String(d.ofrece || "?").toUpperCase();
         }
         return arr;
       });
@@ -2856,6 +2876,39 @@
     // Lo que figura en ESTE celular (programación oficial + cambios cargados acá)
     function actualDe(pi, di) { return String(((people[pi] && people[pi].codes) || [])[di] || "").toUpperCase(); }
     let pedTengoSel = "";
+    let pedFrancoMode = false;
+    let pedFrancosSel = [];
+    const NO_TRABAJA = ["", "F", "LAO", "LIC", "DV", "FC", "14F", "BLOQ"];
+    function trabaja(code) { return NO_TRABAJA.indexOf(String(code || "").toUpperCase()) < 0; }
+    function esFranco(d) { return d && d.tipo === "franco" && Array.isArray(d.francos) && d.francos.length; }
+    // Francos ofrecidos que le sirven a quien mira: él tiene F el día pedido y trabaja ese día ofrecido
+    function francosQueSirven(d, di, me) {
+      if (!me || !esFranco(d) || actualDe(me.pi, di) !== "F") return [];
+      return d.francos.filter(n => trabaja(actualDe(me.pi, n - 1)));
+    }
+    function diaCorto(n) { return DAY_LABELS[n - 1] ? DAY_LABELS[n - 1].split(" ")[0] + " " + n + "/" + MES.m : String(n); }
+    function marcarCeldaPedido(td, id, di) {
+      const d = pedidoDe(id, di);
+      if (!d) return;
+      const fr = esFranco(d);
+      const pide = fr ? String(d.ofrece || "").toUpperCase() : String(d.quiere || "").toUpperCase();
+      td.classList.add("ped-cell");
+      if (fr && td.firstChild && td.firstChild.nodeType === 3) {
+        td.firstChild.nodeValue = d.francos.length === 1 ? "F " + d.francos[0] : "F×" + d.francos.length;
+      }
+      const sp = document.createElement("span");
+      sp.className = "ped-da";
+      sp.textContent = pide || "·";
+      const bg = colorMap[pide] || "#f1f5f9";
+      sp.style.background = bg;
+      sp.style.color = pide ? fgFor(pide, bg) : "#94a3b8";
+      td.appendChild(sp);
+      // Verde: a quien mira le sirve (ese día tiene justo el turno que se pide)
+      const me = miPersona();
+      if (me && String(me.p.id) !== String(id)) {
+        if (fr ? francosQueSirven(d, di, me).length : actualDe(me.pi, di) === pide) td.classList.add("te-sirve");
+      }
+    }
     function pill(code) {
       const c = String(code || "").toUpperCase();
       if (!c) return '<span class="pill" style="background:#f1f5f9;color:#94a3b8">·</span>';
@@ -2957,6 +3010,10 @@
       ["pedidoTengoLbl", "pedidoTengo", "pedidoGridLbl", "pedidoGrid"].forEach(x => {
         document.getElementById(x).style.display = showGrids ? "" : "none";
       });
+      const frEl = document.getElementById("pedidoFrancos");
+      frEl.innerHTML = "";
+      frEl.style.display = "none";
+      document.getElementById("pedidoFrancosLbl").style.display = "none";
 
       if (esMio) {
         if (pedPi !== pi || pedDi !== di || !pedTengoSel || pedidoOverlay.dataset.k !== pi + ":" + di) {
@@ -2964,9 +3021,19 @@
         }
         pedidoOverlay.dataset.k = pi + ":" + di;
         pedPi = pi; pedDi = di;
-        body.innerHTML = '<div class="ped-info">' +
-          (ped ? 'Pedís ' + pill(ped.quiere) + ' y ofrecés ' + pill(ped.ofrece || pedTengoSel) + '.'
-               : 'Confirmá qué tenés ese día y elegí lo que necesitás.') + '</div>';
+        if (pedidoOverlay.dataset.fk !== pi + ":" + di) {
+          pedidoOverlay.dataset.fk = pi + ":" + di;
+          pedFrancoMode = !!esFranco(ped);
+          pedFrancosSel = esFranco(ped) ? ped.francos.slice() : [];
+        }
+        if (esFranco(ped)) {
+          body.innerHTML = '<div class="ped-info">Pedís franco y ofrecés tu franco del ' + ped.francos.join(", ") +
+            '. Te tienen que cubrir ' + pill(ped.ofrece || pedTengoSel) + '.</div>';
+        } else {
+          body.innerHTML = '<div class="ped-info">' +
+            (ped ? 'Pedís ' + pill(ped.quiere) + ' y ofrecés ' + pill(ped.ofrece || pedTengoSel) + '.'
+                 : 'Confirmá qué tenés ese día y elegí lo que necesitás.') + '</div>';
+        }
         const resps = ped && ped.respuestas ? Object.values(ped.respuestas) : [];
         if (resps.length) {
           const lbl = document.createElement("div");
@@ -2976,7 +3043,9 @@
           resps.sort((a, b) => (a.t || 0) - (b.t || 0)).forEach(r => {
             const row = document.createElement("div");
             row.className = "ped-resp";
-            row.innerHTML = '<span>' + r.name + ' te da ' + (r.tiene || ped.quiere) + ', vos le das ' + (ped.ofrece || pedTengoSel) + '</span>';
+            row.innerHTML = esFranco(ped)
+              ? '<span>' + r.name + ': toma tu franco del ' + r.dia + ' (vos hacés su ' + r.deja + ') y te cubre ' + (ped.ofrece || pedTengoSel) + '</span>'
+              : '<span>' + r.name + ' te da ' + (r.tiene || ped.quiere) + ', vos le das ' + (ped.ofrece || pedTengoSel) + '</span>';
             const b = document.createElement("button");
             b.type = "button"; b.className = "ped-act"; b.textContent = "Confirmar";
             b.addEventListener("click", () => confirmarAcuerdo(pi, di, r));
@@ -2999,12 +3068,48 @@
         tengoList.forEach(code => tengoEl.appendChild(mkOpt(code, code === pedTengoSel, () => {
           pedTengoSel = code;
           if (ped && ped.quiere === code) { openPedido(pi, di); return; }
-          if (ped) guardarPedido(pi, di, ped.quiere); else openPedido(pi, di);
+          if (ped) guardarPedido(pi, di, ped.quiere, esFranco(ped) ? ped.francos : null); else openPedido(pi, di);
         })));
         opciones.forEach(code => {
           if (code === pedTengoSel) return;
-          grid.appendChild(mkOpt(code, ped && ped.quiere === code, () => guardarPedido(pi, di, code)));
+          const sel = pedFrancoMode ? code === "F" : (ped && ped.quiere === code);
+          grid.appendChild(mkOpt(code, sel, () => {
+            if (code === "F") {
+              pedFrancoMode = true;
+              if (pedFrancosSel.length) guardarPedido(pi, di, "F", pedFrancosSel); else openPedido(pi, di);
+              return;
+            }
+            pedFrancoMode = false; pedFrancosSel = [];
+            guardarPedido(pi, di, code);
+          }));
         });
+        if (pedFrancoMode) {
+          const misFrancos = [];
+          for (let d = 0; d < DAYS; d++) if (d !== di && actualDe(pi, d) === "F") misFrancos.push(d + 1);
+          document.getElementById("pedidoFrancosLbl").style.display = "";
+          frEl.style.display = "";
+          if (!misFrancos.length) {
+            frEl.style.display = "block";
+            frEl.innerHTML = '<div class="ped-note info">No tenés otros francos este mes para ofrecer.</div>';
+          }
+          misFrancos.forEach(n => {
+            const b = document.createElement("div");
+            b.className = "fr-opt" + (pedFrancosSel.indexOf(n) >= 0 ? " selected" : "");
+            b.innerHTML = n + "<small>" + DAY_LABELS[n - 1].split(" ")[0] + "</small>";
+            b.addEventListener("click", () => {
+              const i = pedFrancosSel.indexOf(n);
+              if (i >= 0) pedFrancosSel.splice(i, 1); else pedFrancosSel.push(n);
+              pedFrancosSel.sort((a, c) => a - c);
+              if (pedFrancosSel.length) guardarPedido(pi, di, "F", pedFrancosSel);
+              else if (ped) { quitarPedidoDoc(pi, di, true); }
+              else openPedido(pi, di);
+            });
+            frEl.appendChild(b);
+          });
+          if (!ped && misFrancos.length) {
+            body.innerHTML = '<div class="ped-info">Pedís franco el ' + fechaTxt(di) + '. Marcá qué francos tuyos ofrecés a cambio.</div>';
+          }
+        }
         document.getElementById("quitarPedido").style.display = ped ? "" : "none";
         acts.style.display = "flex";
         pedidoOverlay.classList.add("open");
@@ -3014,6 +3119,42 @@
       if (!ped) {
         if (!me) { openYo(); return; }
         return; // celda vacía de otro cajero: nada para mostrar
+      }
+      if (esFranco(ped)) {
+        body.innerHTML = '<div class="ped-info">Pide franco. Hay que cubrirle ' + pill(ped.ofrece || ofrece) +
+          '<br>Ofrece su franco del ' + ped.francos.join(", ") + '</div>';
+        if (me) {
+          const yaResp = ped.respuestas && ped.respuestas[me.p.id];
+          const tieneF = actualDe(me.pi, di) === "F";
+          if (!tieneF && !yaResp) {
+            body.insertAdjacentHTML("beforeend", '<div class="ped-note info">Ese día vos tenés ' + (actualDe(me.pi, di) || "—") + ', no franco: no podés tomar este cambio.</div>');
+          }
+          ped.francos.forEach(n => {
+            const deja = actualDe(me.pi, n - 1);
+            const sirve = tieneF && trabaja(deja);
+            const elegido = yaResp && Number(yaResp.dia) === n;
+            const row = document.createElement("div");
+            row.className = "ped-opc" + (sirve || elegido ? " ok" : "");
+            row.innerHTML = "<b>Franco del " + diaCorto(n) + "</b><br>" +
+              (sirve || elegido
+                ? "Te quedás con franco el " + n + " (dejás tu " + (elegido ? yaResp.deja : deja) + "). A cambio, el " + (di + 1) + " trabajás " + (ped.ofrece || ofrece) + "."
+                : "Ese día vos tenés " + (deja || "—") + ".");
+            if (elegido || (sirve && !yaResp)) {
+              const b = document.createElement("button");
+              b.type = "button"; b.className = "ped-act" + (elegido ? " sec" : "");
+              b.textContent = elegido ? "Ya no me sirve" : "Me sirve";
+              b.style.cssText = "width:100%;margin-top:8px";
+              b.addEventListener("click", () => responderPedido(pi, di, !elegido, elegido ? null : { dia: n, deja }));
+              row.appendChild(b);
+            }
+            body.appendChild(row);
+          });
+          if (yaResp) body.insertAdjacentHTML("beforeend", '<div class="ped-note ok">Le avisaste que te sirve el franco del ' + yaResp.dia + '. Falta que ' + p.name + ' confirme.</div>');
+        }
+        acts.style.display = "flex";
+        document.getElementById("quitarPedido").style.display = "none";
+        pedidoOverlay.classList.add("open");
+        return;
       }
       let nota = "";
       let accion = null;
@@ -3049,7 +3190,7 @@
         : "No se pudo guardar. Revisá la conexión.");
     }
     // Otro cajero avisa que el pedido le sirve (o lo retira)
-    function responderPedido(pi, di, si) {
+    function responderPedido(pi, di, si, extra) {
       const me = miPersona();
       if (!me) { openYo(); return; }
       const id = pedDocId(currentMes, people[pi].id, di);
@@ -3057,7 +3198,7 @@
       if (!d) return;
       const u = fbAuth && fbAuth.currentUser;
       const resp = Object.assign({}, d.respuestas || {});
-      if (si) resp[me.p.id] = { id: String(me.p.id), name: me.p.name, tiene: actualDe(me.pi, di), uid: u ? u.uid : "", t: Date.now() };
+      if (si) resp[me.p.id] = Object.assign({ id: String(me.p.id), name: me.p.name, tiene: actualDe(me.pi, di), uid: u ? u.uid : "", t: Date.now() }, extra || {});
       else delete resp[me.p.id];
       d.respuestas = resp;
       openPedido(pi, di);
@@ -3072,6 +3213,28 @@
       if (!d) return;
       const ofrece = d.ofrece || actualDe(pi, di);
       const recibe = r.tiene || d.quiere;
+      if (esFranco(d)) {
+        const n = Number(r.dia);
+        if (!confirm("¿Confirmar el cambio de franco?\n\n" +
+          "Día " + (di + 1) + ": " + p.name + " pasa a F · " + r.name + " pasa a " + ofrece + "\n" +
+          "Día " + n + ": " + p.name + " pasa a " + r.deja + " · " + r.name + " pasa a F\n\n" +
+          "Se carga en el celular de los dos. La programación oficial la actualiza el admin.")) return;
+        const t = Date.now();
+        const acuId = "acuerdo_" + id + "_" + t;
+        const acu = { tipo: "franco", mes: currentMes, dia: di + 1, dia2: n, estado: "acordado", t,
+          id: String(p.id), name: p.name, quiere: "F", ofrece, cubre: r.deja,
+          con: { id: String(r.id), name: r.name, tiene: "F", recibe: ofrece, deja: r.deja } };
+        delete pedidosDocs[id];
+        pedidosDocs[acuId] = acu;
+        closePedido();
+        aplicarAcuerdos();
+        refreshAfterEdit();
+        const batch = fbDb.batch();
+        batch.set(fbDb.collection(PED_COLLECTION).doc(acuId), acu);
+        batch.delete(fbDb.collection(PED_COLLECTION).doc(id));
+        batch.commit().then(() => showShareToast("Cambio de franco confirmado con " + r.name)).catch(errPed);
+        return;
+      }
       if (!confirm("¿Confirmar el cambio del " + fechaTxt(di) + "?\n\n" + p.name + " pasa a " + recibe + "\n" + r.name + " pasa a " + ofrece + "\n\nSe carga en el celular de los dos. La programación oficial la actualiza el admin.")) return;
       const t = Date.now();
       const acuId = "acuerdo_" + id + "_" + t;
@@ -3095,19 +3258,41 @@
       Object.keys(pedidosDocs).forEach(k => {
         const a = pedidosDocs[k];
         if (!a || a.estado !== "acordado" || a.mes !== currentMes) return;
-        let code = null, nota = "";
-        if (String(a.id) === String(miLegajo)) { code = a.quiere; nota = "Cambio con " + (a.con && a.con.name) + " (" + a.ofrece + " → " + a.quiere + ")"; }
-        else if (a.con && String(a.con.id) === String(miLegajo)) { code = a.con.recibe; nota = "Cambio con " + a.name + " (" + a.con.tiene + " → " + a.con.recibe + ")"; }
-        if (!code) return;
+        if (!a.con) return;
+        const soyYo = String(a.id) === String(miLegajo) || String(a.con.id) === String(miLegajo);
+        if (!soyYo) return;
         const flag = "cajAcu:" + k + ":" + miLegajo;
         try { if (localStorage.getItem(flag)) return; } catch (e) {}
-        const pi = people.findIndex(pp => String(pp.id) === String(miLegajo));
         const di = Number(a.dia) - 1;
-        if (pi < 0 || !(di >= 0 && di < DAYS)) return;
-        people[pi].codes[di] = code;
-        if (code === ((ORIGINAL_CODES[pi] || [])[di] || "")) removeEdit(pi, di); else saveEdit(pi, di, code);
-        const prevC = getComment(pi, di);
-        if (prevC.indexOf(nota) < 0) setComment(pi, di, prevC ? prevC + " · " + nota : nota);
+        if (!(di >= 0 && di < DAYS)) return;
+        // En el celular de cualquiera de los dos se cargan AMBAS filas
+        let cambios;
+        if (a.tipo === "franco") {
+          const d2 = Number(a.dia2) - 1;
+          if (!(d2 >= 0 && d2 < DAYS)) return;
+          const nA = "Cambio de franco con " + a.con.name + " (" + (di + 1) + ": " + a.ofrece + "→F · " + (d2 + 1) + ": F→" + a.cubre + ")";
+          const nB = "Cambio de franco con " + a.name + " (" + (di + 1) + ": F→" + a.ofrece + " · " + (d2 + 1) + ": " + a.cubre + "→F)";
+          cambios = [
+            { id: a.id, di, code: "F", nota: nA },
+            { id: a.id, di: d2, code: a.cubre, nota: nA },
+            { id: a.con.id, di, code: a.ofrece, nota: nB },
+            { id: a.con.id, di: d2, code: "F", nota: nB }
+          ];
+        } else {
+          cambios = [
+            { id: a.id, di, code: a.quiere, nota: "Cambio con " + a.con.name + " (" + a.ofrece + " → " + a.quiere + ")" },
+            { id: a.con.id, di, code: a.con.recibe, nota: "Cambio con " + a.name + " (" + a.con.tiene + " → " + a.con.recibe + ")" }
+          ];
+        }
+        cambios.forEach(x => {
+          const di = x.di;
+          const pi = people.findIndex(pp => String(pp.id) === String(x.id));
+          if (pi < 0 || !x.code) return;
+          people[pi].codes[di] = x.code;
+          if (x.code === ((ORIGINAL_CODES[pi] || [])[di] || "")) removeEdit(pi, di); else saveEdit(pi, di, x.code);
+          const prevC = getComment(pi, di);
+          if (prevC.indexOf(x.nota) < 0) setComment(pi, di, prevC ? prevC + " · " + x.nota : x.nota);
+        });
         try { localStorage.setItem(flag, "1"); } catch (e) {}
         hecho = true;
       });
@@ -3126,8 +3311,12 @@
         row.className = "acu-row" + (a.pasado ? " done" : "");
         const di = Number(a.dia) - 1;
         row.innerHTML = '<div class="acu-top"><span>' + (DAY_LABELS[di] ? fechaTxt(di) : a.dia) + '</span></div>' +
-          '<div>' + a.name + ': ' + a.ofrece + ' → ' + a.quiere + '</div>' +
-          '<div>' + a.con.name + ': ' + a.con.tiene + ' → ' + a.con.recibe + '</div>';
+          (a.tipo === "franco"
+            ? '<div>Cambio de franco · días ' + a.dia + ' y ' + a.dia2 + '</div>' +
+              '<div>' + a.name + ': ' + a.dia + ' ' + a.ofrece + ' → F · ' + a.dia2 + ' F → ' + a.cubre + '</div>' +
+              '<div>' + a.con.name + ': ' + a.dia + ' F → ' + a.ofrece + ' · ' + a.dia2 + ' ' + a.cubre + ' → F</div>'
+            : '<div>' + a.name + ': ' + a.ofrece + ' → ' + a.quiere + '</div>' +
+              '<div>' + a.con.name + ': ' + a.con.tiene + ' → ' + a.con.recibe + '</div>');
         const b = document.createElement("button");
         b.type = "button"; b.className = "ped-act" + (a.pasado ? " sec" : "");
         b.textContent = a.pasado ? "Pasado ✓" : "Ya lo pasé";
@@ -3156,11 +3345,11 @@
     document.getElementById("closeAcuerdos").addEventListener("click", () => acuerdosOverlay.classList.remove("open"));
     acuerdosOverlay.addEventListener("click", (e) => { if (e.target === acuerdosOverlay) acuerdosOverlay.classList.remove("open"); });
 
-    function guardarPedido(pi, di, code) {
+    function guardarPedido(pi, di, code, francos) {
       const p = people[pi];
       const id = pedDocId(currentMes, p.id, di);
       const u = fbAuth && fbAuth.currentUser;
-      const data = { mes: currentMes, id: String(p.id), name: p.name, dia: di + 1, quiere: code, ofrece: pedTengoSel || actualDe(pi, di), uid: u ? u.uid : "", t: Date.now() };
+      const data = { mes: currentMes, id: String(p.id), name: p.name, dia: di + 1, quiere: code, tipo: francos && francos.length ? "franco" : "turno", francos: francos && francos.length ? francos.slice() : null, ofrece: pedTengoSel || actualDe(pi, di), uid: u ? u.uid : "", t: Date.now() };
       pedidosDocs[id] = data;
       openPedido(pi, di);
       refreshAfterEdit();
@@ -3170,6 +3359,18 @@
         alert(err && err.code === "permission-denied"
           ? "Firebase no deja guardar el pedido (faltan las reglas de pedidos_cajeros)."
           : "No se pudo guardar el pedido. Revisá la conexión.");
+      });
+    }
+    function quitarPedidoDoc(pi, di, mantenerAbierto) {
+      const id = pedDocId(currentMes, people[pi].id, di);
+      const prev = pedidosDocs[id];
+      delete pedidosDocs[id];
+      refreshAfterEdit();
+      if (mantenerAbierto) openPedido(pi, di);
+      fbDb.collection(PED_COLLECTION).doc(id).delete().catch(() => {
+        if (prev) pedidosDocs[id] = prev;
+        refreshAfterEdit();
+        alert("No se pudo quitar el pedido.");
       });
     }
     document.getElementById("quitarPedido").addEventListener("click", () => {
@@ -3185,7 +3386,7 @@
         alert("No se pudo quitar el pedido.");
       });
     });
-    function closePedido() { pedidoOverlay.classList.remove("open"); pedPi = null; pedDi = null; pedTengoSel = ""; pedidoOverlay.dataset.k = ""; }
+    function closePedido() { pedidoOverlay.classList.remove("open"); pedPi = null; pedDi = null; pedTengoSel = ""; pedidoOverlay.dataset.k = ""; pedidoOverlay.dataset.fk = ""; pedFrancoMode = false; pedFrancosSel = []; }
     document.getElementById("closePedido").addEventListener("click", closePedido);
     document.getElementById("donePedido").addEventListener("click", closePedido);
     pedidoOverlay.addEventListener("click", (e) => { if (e.target === pedidoOverlay) closePedido(); });

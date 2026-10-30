@@ -1434,6 +1434,11 @@
       border-radius: 8px; padding: 7px 10px; font-size: 0.8rem; font-weight: 600; text-align: center;
     }
     body.pedidos-on #pedidosBar { display: block; }
+    #pedidosBar button.ped-chip { background: #fff; color: #9a3412; border: 1px solid #fdba74; }
+    #pedidosBar button.ped-chip.on { background: #16a34a; color: #fff; border-color: #16a34a; }
+    #pedidosBar button#btnVerTodo.on { background: #9a3412; border-color: #9a3412; }
+    #pedidosVacio { display: none; max-width: 560px; margin: 4px auto 10px; padding: 12px; border-radius: 10px; background: #f8fafc; border: 1px dashed #cbd5e1; color: #475569; font-size: 0.85rem; text-align: center; }
+    body.pedidos-on #pedidosVacio.show { display: block; }
     #pedidosBar button {
       margin-left: 8px; border: 0; border-radius: 6px; padding: 4px 8px;
       background: #ea580c; color: #fff; font-weight: 700; font-size: 0.72rem; cursor: pointer;
@@ -1506,11 +1511,14 @@
     </header>
     <div id="pedidosBar">
       <span id="pedidosLabel">Pedidos de cambio</span>
+      <button type="button" id="btnSirven" class="ped-chip">Me sirven</button>
+      <button type="button" id="btnVerTodo" class="ped-chip">Ver todo</button>
       <button type="button" id="btnYo">¿Quién sos?</button>
       <button type="button" id="btnAcuerdos" class="admin-only">Acordados</button>
       <button type="button" id="btnCelulares" class="admin-only">Celulares</button>
       <button type="button" id="btnSalirPedidos">Salir</button>
     </div>
+    <div id="pedidosVacio"></div>
     <div id="dayFilterBar">
       <span id="dayFilterLabel">Sólo un día</span>
       <button type="button" id="btnClearDay">Ver mes</button>
@@ -2592,6 +2600,7 @@
           card.appendChild(table);
           groupCards.appendChild(card);
         });
+        compactarPedidos();
         wrapEl.scrollTop = keepTop;
         wrapEl.scrollLeft = keepLeft;
       } else {
@@ -2976,7 +2985,7 @@
       const nAcu = Object.values(pedidosDocs).filter(d => d && d.mes === currentMes && d.estado === "acordado" && !d.pasado).length;
       document.getElementById("btnAcuerdos").textContent = "Acordados" + (nAcu ? " (" + nAcu + ")" : "");
       document.getElementById("pedidosLabel").textContent =
-        "Pedidos · " + n + (n === 1 ? " pedido" : " pedidos") + (me ? " · sos " + me.p.name : "");
+        n + (n === 1 ? " pedido" : " pedidos") + (me ? " · " + me.p.name : "");
       const btnYo = document.getElementById("btnYo");
       btnYo.textContent = me ? "Cambiar" : "¿Quién sos?";
       // Una vez elegido, solo el admin (logueado en ese celular) lo puede cambiar
@@ -3000,10 +3009,85 @@
       }, err => console.warn("Pedidos:", err));
     }
 
+    // Vista compacta: solo filas y días con algo publicado (y la fila propia)
+    let pedCompacto = true, pedSoloSirven = false;
+    try {
+      pedCompacto = localStorage.getItem("cajPedTodo") !== "1";
+      pedSoloSirven = localStorage.getItem("cajPedSirven") === "1";
+    } catch (e) {}
+    function compactarPedidos() {
+      const vacio = document.getElementById("pedidosVacio");
+      if (vacio) { vacio.classList.remove("show"); vacio.textContent = ""; }
+      if (!pedidosMode || selectedDay !== null) return;
+      const filtrar = pedCompacto || pedSoloSirven;
+      if (!filtrar) return;
+      const me = miPersona();
+      const rows = new Set(), cols = new Set();
+      if (pedSoloSirven) {
+        document.querySelectorAll("#groupCards td.te-sirve").forEach(td => {
+          rows.add(Number(td.dataset.pi)); cols.add(Number(td.dataset.di));
+        });
+      } else {
+        PED_CODES.forEach((arr, pi) => (arr || []).forEach((c, di) => {
+          if (c) { rows.add(pi); cols.add(di); }
+        }));
+        if (me) rows.add(me.pi);
+      }
+      document.querySelectorAll("#groupCards .grp-card").forEach(card => {
+        let visibles = 0;
+        card.querySelectorAll("tbody tr").forEach(tr => {
+          const ok = rows.has(Number(tr.dataset.pi));
+          tr.style.display = ok ? "" : "none";
+          if (ok) visibles++;
+        });
+        card.querySelectorAll("th[data-di], td[data-di]").forEach(c => {
+          c.style.display = cols.has(Number(c.dataset.di)) ? "" : "none";
+        });
+        card.style.display = visibles ? "" : "none";
+        const tb = card.querySelector("table");
+        if (tb) tb.style.setProperty("--days-total", (cols.size * 42) + "px");
+      });
+      if (!cols.size && vacio) {
+        vacio.textContent = pedSoloSirven
+          ? "Por ahora ningún cambio publicado te sirve."
+          : "Todavía no hay cambios publicados. Para pedir uno, tocá tu nombre o \"Ver todo\".";
+        vacio.classList.add("show");
+      }
+    }
+    function updateChips() {
+      document.getElementById("btnSirven").classList.toggle("on", pedSoloSirven);
+      const vt = document.getElementById("btnVerTodo");
+      vt.classList.toggle("on", !pedCompacto);
+      vt.textContent = pedCompacto ? "Ver todo" : "Compacto";
+    }
+    document.getElementById("btnSirven").addEventListener("click", () => {
+      pedSoloSirven = !pedSoloSirven;
+      if (pedSoloSirven) pedCompacto = true;
+      try { localStorage.setItem("cajPedSirven", pedSoloSirven ? "1" : "0"); localStorage.setItem("cajPedTodo", pedCompacto ? "0" : "1"); } catch (e) {}
+      updateChips(); refreshAfterEdit();
+    });
+    document.getElementById("btnVerTodo").addEventListener("click", () => {
+      pedCompacto = !pedCompacto;
+      if (!pedCompacto) pedSoloSirven = false;
+      try { localStorage.setItem("cajPedTodo", pedCompacto ? "0" : "1"); localStorage.setItem("cajPedSirven", pedSoloSirven ? "1" : "0"); } catch (e) {}
+      updateChips(); refreshAfterEdit();
+    });
+    // Tocar tu propio nombre en modo Cambios: muestra todos tus días para poder pedir
+    document.addEventListener("click", (e) => {
+      if (!pedidosMode) return;
+      const td = e.target.closest("td.person-name.mi-fila, td.person-id.mi-fila");
+      if (!td) return;
+      e.stopPropagation();
+      pedCompacto = false; pedSoloSirven = false;
+      try { localStorage.setItem("cajPedTodo", "1"); localStorage.setItem("cajPedSirven", "0"); } catch (e) {}
+      updateChips(); refreshAfterEdit();
+      const tr = document.querySelector('#groupCards tr[data-pi="' + td.dataset.pi + '"]');
+      if (tr) tr.scrollIntoView({ block: "center" });
+    }, true);
     function setPedidosMode(on) {
       pedidosMode = on;
       document.body.classList.toggle("pedidos-on", on);
-      if (on) { startPedidos(); updatePedidosBar(); }
+      if (on) { startPedidos(); updatePedidosBar(); updateChips(); }
       refreshAfterEdit();
       if (on && !miPersona()) openYo();
     }

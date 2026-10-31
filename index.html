@@ -1334,7 +1334,7 @@
       width: max-content;
       max-width: none;
       margin: 0 auto 16px;
-      border: 2px solid var(--ink);
+      border: 1px solid var(--ink);
       border-radius: 12px;
       overflow: clip;
       background: #fff;
@@ -1350,7 +1350,7 @@
       color: var(--ink) !important;
       border: 0;
       border-left: 1px solid var(--grid);
-      border-bottom: 2px solid var(--ink) !important;
+      border-bottom: 1px solid var(--ink) !important;
       height: 46px !important;
       padding: 4px 1px !important;
       line-height: 1.1;
@@ -1370,6 +1370,8 @@
     .grp-card thead th.sticky-col-2 { border-left: 0; }
     /* Las celdas fijas del encabezado (GRUPO 1/2) quedan por encima de los días al moverse de costado */
     .grp-card thead th.sticky-col, .grp-card thead th.sticky-col-2 { z-index: 60 !important; }
+    /* La fila de días y fechas no queda fija arriba al desplazarse: se va con su grupo */
+    .grp-card thead th { top: auto !important; }
 
 
     /* Sin espacio extra abajo: el scroll va del tope hasta que el último jefe queda al pie de la pantalla */
@@ -1396,8 +1398,15 @@
     /* Línea gruesa que separa nombres de días */
     .grp-card th.sticky-col-2, .grp-card td.sticky-col-2,
     body.names-hidden .grp-card th.sticky-col, body.names-hidden .grp-card td.sticky-col {
-      border-right: 2px solid var(--ink) !important;
+      border-right: 1px solid var(--ink) !important;
     }
+    /* Esa línea, además, como rayita propia por encima: así las líneas grises horizontales no la cortan */
+    .grp-card td.sticky-col-2, body.names-hidden .grp-card td.sticky-col { overflow: visible !important; }
+    .grp-card td.sticky-col-2::after, body.names-hidden .grp-card td.sticky-col::after {
+      content: ""; position: absolute; right: -1px; top: -1px; bottom: -1px; width: 1px;
+      background: var(--ink); z-index: 1; pointer-events: none;
+    }
+    body.names-hidden .grp-card td.sticky-col-2::after { content: none; }
 
     /* Celdas de turnos */
     .grp-card tbody td:not(.sticky-col):not(.sticky-col-2) {

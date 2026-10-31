@@ -1549,7 +1549,6 @@
       <button type="button" id="btnYo">¿Quién sos?</button>
       <button type="button" id="btnAcuerdos" class="admin-only">Acordados</button>
       <button type="button" id="btnCelulares" class="admin-only">Celulares</button>
-      <button type="button" id="btnSalirPedidos">Salir</button>
     </div>
     <div id="pedidosVacio"></div>
     <div id="dayFilterBar">
@@ -3136,12 +3135,15 @@
     function setPedidosMode(on) {
       pedidosMode = on;
       document.body.classList.toggle("pedidos-on", on);
+      // El mismo botón sirve para entrar y para volver a la grilla (ya no hay botón "Salir")
+      const bp = document.getElementById("btnPedidos");
+      bp.textContent = on ? "Volver" : "Cambios";
+      bp.title = on ? "Volver a la grilla" : "Pedidos de cambio de turno";
       if (on) { startPedidos(); updatePedidosBar(); updateChips(); }
       refreshAfterEdit();
       if (on && !miPersona()) openYo();
     }
     document.getElementById("btnPedidos").addEventListener("click", () => setPedidosMode(!pedidosMode));
-    document.getElementById("btnSalirPedidos").addEventListener("click", () => setPedidosMode(false));
 
     // --- ¿Quién sos? ---
     const yoOverlay = document.getElementById("yoOverlay");

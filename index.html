@@ -1422,7 +1422,18 @@
     .grp-card thead th .grp-n { font-weight: 500; color: #6b7280; margin-left: 4px; }
     .grp-card td.blk { font-size: 0.62rem !important; }
     /* Bloque LIC: línea negra de 2px arriba y abajo (sombra interna, así no la tapa el borde de la fila vecina) */
-    .grp-card tbody td.blk[data-code="LIC"] { box-shadow: inset 0 2px 0 #111827, inset 0 -2px 0 #111827 !important; }
+    /* Bloque LIC: un solo bloque continuo. La línea negra de arriba y abajo se dibuja con un
+       pseudo-elemento que se estira 1px a cada lado, así tapa las uniones entre días; y por
+       dentro del bloque las líneas verticales (incluida la de DO/LU) toman el color del bloque. */
+    .grp-card tbody td.blk[data-code="LIC"] { position: relative; box-shadow: none !important; overflow: visible !important; }
+    .grp-card tbody td.blk[data-code="LIC"]::after {
+      content: ""; position: absolute; top: 0; bottom: 0; left: -2px; right: -2px; z-index: 2;
+      border-top: 2px solid #111827; border-bottom: 2px solid #111827; pointer-events: none;
+    }
+    .grp-card tbody td.blk-first[data-code="LIC"]::after { left: 0; }
+    .grp-card tbody td.blk-last[data-code="LIC"]::after { right: 0; }
+    .grp-card tbody td.blk[data-code="LIC"]:not(.blk-first) { border-left: 1px solid var(--blk-bg, transparent) !important; }
+    .grp-card tbody td.blk[data-code="LIC"]:not(.blk-last) { border-right: 1px solid var(--blk-bg, transparent) !important; }
     /* Vista del día como en jefes: código más grande y sin negrita fuerte */
     body.day-view .day-table td.day-only { font-size: 1.05rem !important; font-weight: 600 !important; }
     /* ===== PEDIDOS DE CAMBIO ===== */
@@ -2311,6 +2322,7 @@
           const hideText = code === "LIC" && !el.classList.contains("shift-option") && !el.classList.contains("blk-first");
           el.style.color = hideText ? bg : fgFor(code, bg);
           if (el.classList.contains("blk")) {
+            el.style.setProperty("--blk-bg", bg);
             el.style.borderLeftColor = el.classList.contains("blk-first") ? "" : bg;
             el.style.borderRightColor = el.classList.contains("blk-last") ? "" : bg;
           }

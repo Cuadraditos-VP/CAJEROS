@@ -1407,6 +1407,10 @@
       background: var(--ink); z-index: 1; pointer-events: none;
     }
     body.names-hidden .grp-card td.sticky-col-2::after { content: none; }
+    /* Al desplazar de costado, legajo y nombre se pegan al borde de la pantalla (no después del
+       margen de 10px de la grilla), así no asoma una franja de días a la izquierda */
+    .grp-card th.sticky-col, .grp-card td.sticky-col { left: -10px !important; }
+    .grp-card th.sticky-col-2, .grp-card td.sticky-col-2 { left: calc(var(--col-legajo) - 10px) !important; }
 
     /* Celdas de turnos */
     .grp-card tbody td:not(.sticky-col):not(.sticky-col-2) {

@@ -2153,12 +2153,36 @@
       if (data && Array.isArray(data.feriados)) return toIdx(data.feriados);
       return [];
     }
+    // Último cambio que mandó algún cajero (CJ) para cada día de un legajo en un mes: { di: código }
+    function cjCambiosDe(key, id) {
+      const out = {}, tiempos = {};
+      const pref = String(id) + ":";
+      Object.values(cjDocs).forEach(doc => {
+        if (!doc || doc.mes !== key || !doc.edits) return;
+        Object.keys(doc.edits).forEach(k => {
+          if (k.indexOf(pref) !== 0) return;
+          const e = doc.edits[k];
+          if (!e) return;
+          const di = Number(k.slice(pref.length));
+          const t = Number(e.t) || 0;
+          if (tiempos[di] == null || t > tiempos[di]) { tiempos[di] = t; out[di] = String(e.c || "").trim().toUpperCase(); }
+        });
+      });
+      return out;
+    }
+    // mode: "oficial" = programación publicada · "actual" = con los cambios de ESTE celular
+    //       "cj" = con los cambios que mandaron los cajeros (vista CJ del admin)
     function codesInMonth(key, id, mode) {
       const info = mesInfo(key);
       if (key === currentMes) {
         const pi = people.findIndex(p => String(p.id) === String(id));
         if (pi < 0) return Array(info.days).fill("");
-        const src = mode === "actual" ? people[pi].codes : (ORIGINAL_CODES[pi] || []);
+        let src = mode === "actual" ? people[pi].codes : (ORIGINAL_CODES[pi] || []);
+        if (mode === "cj") {
+          src = (ORIGINAL_CODES[pi] || []).slice();
+          const cj = cjCambiosDe(key, id);
+          Object.keys(cj).forEach(d => { if (Number(d) < info.days) src[Number(d)] = cj[d]; });
+        }
         return src.map(c => String(c || "").trim().toUpperCase());
       }
       const list = monthScheduleList(key) || [];
@@ -2167,6 +2191,10 @@
       if (pi >= 0) {
         const raw = Array.isArray(list[pi].codes) ? list[pi].codes : [];
         raw.forEach((c, i) => { if (i < info.days) codes[i] = String(c || "").trim().toUpperCase(); });
+      }
+      if (mode === "cj") {
+        const cj = cjCambiosDe(key, id);
+        Object.keys(cj).forEach(d => { if (Number(d) < info.days) codes[Number(d)] = cj[d]; });
       }
       if (mode === "actual") {
         let edits = {};
@@ -4629,7 +4657,9 @@
       if (!el) return;
       const id = people[pi] ? people[pi].id : "";
       const prog = overtimePeriod(id, "oficial");
-      const camb = overtimePeriod(id, "actual");
+      // En la vista CJ del admin, "con cambios" usa los cambios que mandaron los cajeros
+      const enCj = viewMode === "cj";
+      const camb = overtimePeriod(id, enCj ? "cj" : "actual");
       const delta = Math.round((camb.total - prog.total) * 100) / 100;
       const deltaTxt = delta === 0 ? "sin diferencia" : ((delta > 0 ? "+" : "") + fmtHoras(delta).replace(" h", "") + " h");
       const b = prog.bounds;
@@ -4657,7 +4687,7 @@
           ${notaPrev(prog)}
         </div>
         <div class="ot-card${changed}">
-          <div class="ot-label">Horas extras con cambios</div>
+          <div class="ot-label">Horas extras con cambios${enCj ? " (CJ)" : ""}</div>
           <div class="ot-nums">${fmtHoras(camb.total)}</div>
           ${notaPrev(camb)}
         </div>`;

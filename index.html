@@ -1407,7 +1407,9 @@
     .grp-card tbody tr:last-child td { border-bottom: 0 !important; }
 
     /* Separador de semana (entre DO y LU) */
-    .grp-card .week-sep { border-left: 2px solid var(--ink) !important; }
+    /* Se dibuja como sombra interna (no como borde) para que pueda medir 1,5px: los bordes de
+       la tabla se redondean a px enteros y con 1px le ganaba la línea gris del día anterior. */
+    .grp-card .week-sep { border-left-style: hidden !important; box-shadow: inset 1.5px 0 0 var(--ink) !important; }
 
     /* Bloques (LAO, LIC, 10A, 10J, C/A): etiqueta en cursiva al inicio */
     .grp-card td.blk-first {
@@ -1431,6 +1433,7 @@
       border-top: 2px solid #111827; border-bottom: 2px solid #111827; pointer-events: none;
     }
     .grp-card tbody td.blk-first[data-code="LIC"]::after { left: 0; }
+    .grp-card tbody td.blk-first[data-code="LIC"].week-sep { box-shadow: inset 1.5px 0 0 var(--ink) !important; }
     .grp-card tbody td.blk-last[data-code="LIC"]::after { right: 0; }
     .grp-card tbody td.blk[data-code="LIC"]:not(.blk-first) { border-left: 1px solid var(--blk-bg, transparent) !important; }
     .grp-card tbody td.blk[data-code="LIC"]:not(.blk-last) { border-right: 1px solid var(--blk-bg, transparent) !important; }

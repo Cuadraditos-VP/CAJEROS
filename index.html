@@ -1407,9 +1407,16 @@
     .grp-card tbody tr:last-child td { border-bottom: 0 !important; }
 
     /* Separador de semana (entre DO y LU) */
-    /* Se dibuja como sombra interna (no como borde) para que pueda medir 1,5px: los bordes de
-       la tabla se redondean a px enteros y con 1px le ganaba la línea gris del día anterior. */
-    .grp-card .week-sep { border-left-style: hidden !important; box-shadow: inset 1.5px 0 0 var(--ink) !important; }
+    /* Línea DO/LU de 1px. No es un borde: es una rayita propia (.ws-line, la agrega
+       pintarLineasSemana) que va por encima de la grilla, así las líneas grises horizontales
+       no la cortan. En el medio de un bloque LIC no se pone: el bloque pasa por encima. */
+    .grp-card .week-sep { border-left: 1px solid var(--grid) !important; }
+    .grp-card td.week-sep { position: relative; overflow: visible !important; }
+    .grp-card th.week-sep { overflow: visible !important; }
+    .grp-card .week-sep > .ws-line {
+      position: absolute; left: -1px; top: -1px; bottom: -1px; width: 1px;
+      background: var(--ink); z-index: 3; pointer-events: none;
+    }
 
     /* Bloques (LAO, LIC, 10A, 10J, C/A): etiqueta en cursiva al inicio */
     .grp-card td.blk-first {
@@ -1433,7 +1440,6 @@
       border-top: 2px solid #111827; border-bottom: 2px solid #111827; pointer-events: none;
     }
     .grp-card tbody td.blk-first[data-code="LIC"]::after { left: 0; }
-    .grp-card tbody td.blk-first[data-code="LIC"].week-sep { box-shadow: inset 1.5px 0 0 var(--ink) !important; }
     .grp-card tbody td.blk-last[data-code="LIC"]::after { right: 0; }
     .grp-card tbody td.blk[data-code="LIC"]:not(.blk-first) { border-left: 1px solid var(--blk-bg, transparent) !important; }
     .grp-card tbody td.blk[data-code="LIC"]:not(.blk-last) { border-right: 1px solid var(--blk-bg, transparent) !important; }
@@ -2618,6 +2624,7 @@
           card.appendChild(table);
           groupCards.appendChild(card);
         });
+        pintarLineasSemana(groupCards);
         compactarPedidos();
         wrapEl.scrollTop = keepTop;
         wrapEl.scrollLeft = keepLeft;
@@ -2718,6 +2725,17 @@
         th.innerHTML = '<span class="wd">' + WEEKDAY_ABBR[wd] + '</span><span class="day-num">' + (d + 1) + "</span>";
         row.appendChild(th);
       }
+      pintarLineasSemana(row);
+    }
+    // Línea DO/LU: agrega la rayita (ver .ws-line en el CSS) en las celdas del lunes
+    function pintarLineasSemana(root) {
+      (root || document).querySelectorAll(".week-sep").forEach(el => {
+        if (!el.closest(".grp-card") || el.querySelector(":scope > .ws-line")) return;
+        if (el.matches('td.blk[data-code="LIC"]:not(.blk-first)')) return;
+        const ln = document.createElement("i");
+        ln.className = "ws-line";
+        el.appendChild(ln);
+      });
     }
 
     // Deja todo listo para mostrar un mes: fechas, título, encabezado y ediciones locales

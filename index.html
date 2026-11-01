@@ -1493,6 +1493,8 @@
     #pedidosBar button.ped-chip { background: #fff; color: #9a3412; border: 1px solid #fdba74; }
     #pedidosBar button.ped-chip.on { background: #16a34a; color: #fff; border-color: #16a34a; }
     #pedidosBar button#btnVerTodo.on { background: #9a3412; border-color: #9a3412; }
+    #pedidosBar button#btnPedir { padding: 6px 12px; font-size: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    #pedidoOverlay, #yoOverlay, #avisosOverlay, #infoOverlay { z-index: 1200; }
     #pedidosVacio { display: none; max-width: 560px; margin: 4px auto 10px; padding: 12px; border-radius: 10px; background: #f8fafc; border: 1px dashed #cbd5e1; color: #475569; font-size: 0.85rem; text-align: center; }
     body.pedidos-on #pedidosVacio.show { display: block; }
     #pedidosBar button {
@@ -1582,7 +1584,7 @@
     <div id="pedidosBar">
       <span id="pedidosLabel">Pedidos de cambio</span>
       <button type="button" id="btnSirven" class="ped-chip">Me sirven</button>
-      <button type="button" id="btnVerTodo" class="ped-chip">Ver todo</button>
+      <button type="button" id="btnPedir">＋ Pedir cambio</button>
       <button type="button" id="btnYo">¿Quién sos?</button>
       <button type="button" id="btnAcuerdos" class="admin-only">Acordados</button>
       <button type="button" id="btnCelulares" class="admin-only">Celulares</button>
@@ -3196,11 +3198,10 @@
     }
 
     // Vista compacta: solo filas y días con algo publicado (y la fila propia)
-    let pedCompacto = true, pedSoloSirven = false;
-    try {
-      pedCompacto = localStorage.getItem("cajPedTodo") !== "1";
-      pedSoloSirven = localStorage.getItem("cajPedSirven") === "1";
-    } catch (e) {}
+    // Siempre compacta: para pedir, "Pedir cambio" abre tu almanaque
+    const pedCompacto = true;
+    let pedSoloSirven = false;
+    try { pedSoloSirven = localStorage.getItem("cajPedSirven") === "1"; } catch (e) {}
     function compactarPedidos() {
       const vacio = document.getElementById("pedidosVacio");
       if (vacio) { vacio.classList.remove("show"); vacio.textContent = ""; }
@@ -3236,40 +3237,41 @@
       if (!cols.size && vacio) {
         vacio.textContent = pedSoloSirven
           ? "Por ahora ningún cambio publicado te sirve."
-          : "Todavía no hay cambios publicados. Para pedir uno, tocá tu nombre o \"Ver todo\".";
+          : "Todavía no hay pedidos. Para pedir uno, tocá \"Pedir cambio\".";
         vacio.classList.add("show");
       }
     }
     function updateChips() {
       document.getElementById("btnSirven").classList.toggle("on", pedSoloSirven);
-      const vt = document.getElementById("btnVerTodo");
-      vt.classList.toggle("on", !pedCompacto);
-      vt.textContent = pedCompacto ? "Ver todo" : "Compacto";
     }
     document.getElementById("btnSirven").addEventListener("click", () => {
       pedSoloSirven = !pedSoloSirven;
-      if (pedSoloSirven) pedCompacto = true;
-      try { localStorage.setItem("cajPedSirven", pedSoloSirven ? "1" : "0"); localStorage.setItem("cajPedTodo", pedCompacto ? "0" : "1"); } catch (e) {}
+      try { localStorage.setItem("cajPedSirven", pedSoloSirven ? "1" : "0"); } catch (e) {}
       updateChips(); refreshAfterEdit();
     });
-    document.getElementById("btnVerTodo").addEventListener("click", () => {
-      pedCompacto = !pedCompacto;
-      if (!pedCompacto) pedSoloSirven = false;
-      try { localStorage.setItem("cajPedTodo", pedCompacto ? "0" : "1"); localStorage.setItem("cajPedSirven", pedSoloSirven ? "1" : "0"); } catch (e) {}
-      updateChips(); refreshAfterEdit();
-    });
-    // Tocar tu propio nombre en modo Cambios: muestra todos tus días para poder pedir
+    // ---- Pedir cambio: abre tu almanaque con tus turnos; tocás el día y cargás el pedido ----
+    let calModoPedir = false;
+    function abrirPedirCambio() {
+      const me = miPersona();
+      if (!me) { openYo(); return; }
+      calModoPedir = true;
+      openPersonCalendar(me.pi);
+    }
+    document.getElementById("btnPedir").addEventListener("click", abrirPedirCambio);
+    // Tocar tu propio nombre en modo Cambios también abre tu almanaque para pedir
     document.addEventListener("click", (e) => {
       if (!pedidosMode) return;
       const td = e.target.closest("td.person-name.mi-fila, td.person-id.mi-fila");
       if (!td) return;
       e.stopPropagation();
-      pedCompacto = false; pedSoloSirven = false;
-      try { localStorage.setItem("cajPedTodo", "1"); localStorage.setItem("cajPedSirven", "0"); } catch (e) {}
-      updateChips(); refreshAfterEdit();
-      const tr = document.querySelector('#groupCards tr[data-pi="' + td.dataset.pi + '"]');
-      if (tr) tr.scrollIntoView({ block: "center" });
+      abrirPedirCambio();
     }, true);
+    // En el almanaque de "Pedir cambio": borde naranja en los días donde ya tenés un pedido
+    function marcaCal(pi, d) {
+      if (!calModoPedir) return markClass(pi, d);
+      const p = people[pi];
+      return p && (pedidoDe(p.id, d) || refDia(pi, d) != null) ? "con-resp" : "";
+    }
     function setPedidosMode(on) {
       pedidosMode = on;
       document.body.classList.toggle("pedidos-on", on);
@@ -4170,7 +4172,10 @@
         alert("No se pudo quitar el pedido.");
       });
     });
-    function closePedido() { pedidoOverlay.classList.remove("open"); pedPi = null; pedDi = null; pedTengoSel = ""; pedidoOverlay.dataset.k = ""; pedidoOverlay.dataset.fk = ""; pedFrancoMode = false; pedFrancosSel = []; pedAceptaSel = []; }
+    function closePedido() {
+      // Si se vino desde "Pedir cambio", el almanaque se redibuja (para marcar el día pedido)
+      if (calModoPedir && personOverlay.classList.contains("open") && currentCalPi != null) setTimeout(() => openPersonCalendar(currentCalPi), 0);
+      pedidoOverlay.classList.remove("open"); pedPi = null; pedDi = null; pedTengoSel = ""; pedidoOverlay.dataset.k = ""; pedidoOverlay.dataset.fk = ""; pedFrancoMode = false; pedFrancosSel = []; pedAceptaSel = []; }
     document.getElementById("closePedido").addEventListener("click", closePedido);
     document.getElementById("donePedido").addEventListener("click", closePedido);
     pedidoOverlay.addEventListener("click", (e) => { if (e.target === pedidoOverlay) closePedido(); });
@@ -5109,8 +5114,8 @@
     function openPersonCalendar(pi) {
       currentCalPi = pi;
       const person = people[pi];
-      const codesArr = codesFor(pi);
-      personCalTitle.textContent = person.name + " · " + person.id;
+      const codesArr = calModoPedir ? (person.codes || []) : codesFor(pi);
+      personCalTitle.textContent = calModoPedir ? "Tocá el día que querés cambiar" : person.name + " · " + person.id;
 
       // Vista almanaque (grilla de 7 columnas)
       let gridHtml = WEEKDAY_ABBR.map(d => `<div class="cal-wd">${d}</div>`).join("");
@@ -5119,7 +5124,7 @@
         const code = codesArr[d] || "";
         const bg = code ? (colorMap[code] || "#e2e8f0") : "#f8fafc";
         const fg = code ? fgFor(code, bg) : "#94a3b8";
-        const edited = markClass(pi, d);
+        const edited = marcaCal(pi, d);
         const cmtG = getComment(pi, d);
         const hasC = cmtG ? " has-comment" : "";
         const titleG = cmtG ? cmtG.replace(/"/g, "&quot;") : "";
@@ -5139,7 +5144,7 @@
         const code = codesArr[d] || "";
         const bg = code ? (colorMap[code] || "#e2e8f0") : "#f8fafc";
         const fg = code ? fgFor(code, bg) : "#94a3b8";
-        const edited = markClass(pi, d);
+        const edited = marcaCal(pi, d);
         const wd = WEEKDAY_ABBR[(MES.startWd + d) % 7];
         const cmtH = getComment(pi, d);
         const hasCH = cmtH ? " has-comment" : "";
@@ -5226,6 +5231,7 @@
 
     function closePersonCalendar() {
       personOverlay.classList.remove("open");
+      calModoPedir = false;
     }
     btnToggleCalView.addEventListener("click", () => {
       calViewMode = calViewMode === "horizontal" ? "grid" : "horizontal";

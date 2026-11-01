@@ -35,6 +35,8 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
 ## Conceptos de la app
 - **¿Quién sos?**: cada celular elige su nombre una vez (`localStorage` `cajYo`) y se reserva
   en `legajos_cajeros` (un celular por legajo). Solo el admin lo puede cambiar.
+- **Externos** (`EXTERNOS` en `index.html`, hoy solo "Valeria"): aparecen al final de "¿Quién sos?",
+  no reservan legajo, no tienen fila propia (no publican ni piden cambios) y no tienen permisos extra.
 - **Fila propia vs. ajena**: cualquiera puede cambiar cualquier fila en su celular, pero solo
   lo de **su propia fila** se publica para todos (colección `propios_cajeros`, doc
   `<mes>_<legajo>`, días como `d0`, `d1`…). Lo de filas ajenas queda solo en ese celular.

@@ -66,14 +66,14 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   cerrado con otro, admin lo pasó a lo oficial, admin descartó tu cambio.
 - **CJ** (vista del admin): los cambios que manda cada celular (colección `cj_cajeros`),
   incluidos los de filas ajenas.
+- Al abrir, la app muestra la grilla principal (el almanaque propio no se abre solo;
+  `ABRIR_ALMANAQUE_AL_INICIO = false`, igual en las dos).
 - Colores de celdas: ámbar = cambio solo en este celular; azul = publicado.
 
 ## Diferencias con la gemela (jefes)
 - En cajeros el admin publica el mes entero subiendo su archivo con ↑ JSON (va a `turnos_cajeros`
   y al padrón); los colores/feriados/letras van aparte con ⬆ Publicar (colección `cajeros`).
   Cada mes nuevo: Guillermo pasa el PDF, se arma el JSON y él lo sube con ↑ JSON (no a GitHub).
-- Al abrir, cajeros abre el almanaque propio; jefes muestra la grilla principal
-  (`ABRIR_ALMANAQUE_AL_INICIO`).
 - Colección de CJ: `cj_cajeros` (en jefes es `cj`). Hay `server.js` para correr la app en local.
 
 ## Detalles técnicos útiles

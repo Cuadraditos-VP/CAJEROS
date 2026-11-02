@@ -43,6 +43,11 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
 - **¿Quién sos?**: cada celular escribe su **legajo** una vez (`localStorage` `cajYo`); la app busca
   el nombre en `padron_cajeros/{legajo}` (Firebase deja leer de a un legajo, no la lista) y lo
   reserva en `legajos_cajeros` (un celular por legajo). Solo el admin lo puede cambiar (él ve la lista).
+- **iPhone**: Safari y la app instalada en el inicio no comparten nada (para Firebase son dos
+  celulares). En Safari de iPhone "¿Quién sos?" explica que primero instalen la app (o "Prefiero
+  usarla solo en Safari"); un link de invitación abierto en Safari no se gasta y muestra el código,
+  que se escribe en la app con "Tengo un código de invitación". En Celulares, "(app)" = instalada.
+  No usar `alert`/`confirm` después de esperar a Firebase (en iPhone a veces no aparecen).
 - **Externos**: entran con un link de invitación del admin (Celulares → Invitar, colección
   `invitados_cajeros`). No reservan legajo, no tienen fila propia (no publican ni piden cambios).
   `EXTERNOS` en `index.html` quedó vacío (Valeria pasó a invitación).

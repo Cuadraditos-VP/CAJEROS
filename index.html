@@ -1558,8 +1558,17 @@
     #yoLegajoBtn { border: 0; border-radius: 8px; padding: 0 16px; background: #0f766e; color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
     #yoLegajoMsg:not(:empty) { margin-top: 8px; font-size: 0.8rem; font-weight: 600; color: #b91c1c; }
     #yoLegajoAyuda { margin-top: 10px; font-size: 0.72rem; color: #64748b; }
+    #yoLegajoConf { display: none; margin-top: 10px; padding: 10px; border-radius: 8px; background: #f0fdfa; border: 1px solid #99f6e4; }
+    #yoLegajoConf.show { display: block; }
+    #yoLegajoPregunta { font-size: 0.9rem; font-weight: 700; color: #134e4a; }
+    #yoLegajoPregunta small { display: block; margin-top: 4px; font-size: 0.72rem; font-weight: 500; color: #475569; }
+    #yoLegajoBotones { display: flex; gap: 8px; margin-top: 10px; }
+    #yoLegajoBotones button { flex: 1; border: 0; border-radius: 8px; padding: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+    #yoLegajoSi { background: #0f766e; color: #fff; }
+    #yoLegajoNo { background: #e2e8f0; color: #334155; }
     #sinDatos { display: none; margin: 24px auto; max-width: 420px; padding: 18px 16px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; text-align: center; color: #334155; font-size: 0.9rem; font-weight: 600; }
     #sinDatos.show { display: block; }
+    body.sin-datos .group, body.sin-datos #groupCards, body.sin-datos .day-split { display: none !important; }
     #sinDatos button { margin-top: 12px; border: 0; border-radius: 8px; padding: 9px 16px; background: #0f766e; color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
 </style>
 </head>
@@ -1774,6 +1783,13 @@
           <button type="button" id="yoLegajoBtn">Buscar</button>
         </div>
         <div id="yoLegajoMsg"></div>
+        <div id="yoLegajoConf">
+          <div id="yoLegajoPregunta"></div>
+          <div id="yoLegajoBotones">
+            <button type="button" id="yoLegajoSi">Sí, soy yo</button>
+            <button type="button" id="yoLegajoNo">No</button>
+          </div>
+        </div>
         <div id="yoLegajoAyuda">¿No tenés legajo? Pedile al administrador un link de invitación.</div>
       </div>
       <input id="yoSearch" type="search" placeholder="Buscar apellido o legajo" autocomplete="off">
@@ -1853,228 +1869,15 @@
     let WEEKEND_DAYS = [];    // índices (0-based) de sábados y domingos
     let WEEK_START_DAYS = []; // índices (0-based) donde empieza una semana (LU)
 
-    // Plantel cajeros (octubre 2026). Códigos vacíos: el afiche no se lee celda a celda con certeza.
-    const SEED_OCT = [
-      { id: "62047", name: "ORTIZ, NICOLAS", codes: Array(31).fill("") },
-      { id: "61199", name: "LAFARGA, CARLA", codes: Array(31).fill("") },
-      { id: "62112", name: "MENDOZA, NADIA", codes: Array(31).fill("") },
-      { id: "60666", name: "AGUIAR, RAMON", codes: Array(31).fill("") },
-      { id: "62095", name: "GONZALEZ, SANTIAGO", codes: Array(31).fill("") },
-      { id: "61951", name: "SEMENZA, AGUSTINA", codes: Array(31).fill("") },
-      { id: "62034", name: "RIVERO, INGRID", codes: Array(31).fill("") },
-      { id: "61172", name: "AGÜERO, JONATHAN", codes: Array(31).fill("") },
-      { id: "61911", name: "ACOSTA, ADA", codes: Array(31).fill("") },
-      { id: "60856", name: "SIMONIT, CARLA", codes: Array(31).fill("") },
-      { id: "62108", name: "BORRAJO, NAHUEL", codes: Array(31).fill("") },
-      { id: "61184", name: "ORTIZ, OSCAR", codes: Array(31).fill("") },
-      { id: "61920", name: "ROJAS, CINTIA", codes: Array(31).fill("") },
-      { id: "61989", name: "ROMERO, ANTONELLA", codes: Array(31).fill("") },
-      { id: "61975", name: "PAVON, ALAN", codes: Array(31).fill("") },
-      { id: "61945", name: "OBIETA, BELEN", codes: Array(31).fill("") },
-      { id: "61919", name: "PEREZ, ITATI", codes: Array(31).fill("") },
-      { id: "62033", name: "CEJA, CELESTE", codes: Array(31).fill("") },
-      { id: "62104", name: "ALVAREZ, JULIAN", codes: Array(31).fill("") },
-      { id: "62110", name: "IRALA, MICAELA", codes: Array(31).fill("") },
-      { id: "61208", name: "PREITO, CECILIA", codes: Array(31).fill("") },
-      { id: "49548", name: "MELO, NATALIA", codes: Array(31).fill("") },
-      { id: "50788", name: "LOPEZ, EVELYN", codes: Array(31).fill("") },
-      { id: "60996", name: "GODOY, WALTER", codes: Array(31).fill("") },
-      { id: "61971", name: "MARTINEZ, DANTE", codes: Array(31).fill("") },
-      { id: "62087", name: "VENTRIGLIA, ANA", codes: Array(31).fill("") },
-      { id: "50564", name: "SIPUENTES, DENISSE", codes: Array(31).fill("") },
-      { id: "61051", name: "DIAZ, JESUS", codes: Array(31).fill("") },
-      { id: "62109", name: "GOLDSCHLAGER, UMA", codes: Array(31).fill("") },
-      { id: "60926", name: "FARRADO, MARIANO", codes: Array(31).fill("") },
-      { id: "50863", name: "TRAVERSO, GASPAR", codes: Array(31).fill("") },
-      { id: "62053", name: "ORONA, AGUSTIN", codes: Array(31).fill("") },
-      { id: "60934", name: "SANCHEZ, MARANGELIS", codes: Array(31).fill("") },
-      { id: "61439", name: "FERNANDEZ, PAULA", codes: Array(31).fill("") },
-      { id: "61049", name: "SANCHEZ, CLAUDIO", codes: Array(31).fill("") },
-      { id: "60454", name: "OLMEDO, MYRIAM", codes: Array(31).fill("") },
-      { id: "62106", name: "TEVEZ, VALENTIN", codes: Array(31).fill("") },
-      { id: "60754", name: "FAISAL, ALEJANDRO", codes: Array(31).fill("") },
-      { id: "62093", name: "DOMINGUEZ, VICTORIA", codes: Array(31).fill("") },
-      { id: "62114", name: "GODMAN, ORIANA", codes: Array(31).fill("") },
-      { id: "62113", name: "STAHL, SASHA", codes: Array(31).fill("") },
-      { id: "50978", name: "ALI, GERONIMO", codes: Array(31).fill("") },
-      { id: "61953", name: "ZUBILLAGA, LUZ", codes: Array(31).fill("") },
-      { id: "61962", name: "DIAZ, VALENTIN", codes: Array(31).fill("") },
-      { id: "61980", name: "CARRIZO, LEONEL", codes: Array(31).fill("") },
-      { id: "50827", name: "TRIVIÑO, JOAQUIN", codes: Array(31).fill("") },
-      { id: "61009", name: "LUCERO, GERALDINA", codes: Array(31).fill("") },
-      { id: "50824", name: "ABALSAMO, SANTIAGO", codes: Array(31).fill("") },
-      { id: "62049", name: "ACEVEDO, LAUTARO", codes: Array(31).fill("") },
-      { id: "61912", name: "ARES, TADEO", codes: Array(31).fill("") },
-      { id: "61918", name: "OBIETA, BRENDA", codes: Array(31).fill("") },
-      { id: "50961", name: "GONZALEZ, KEVIN", codes: Array(31).fill("") },
-      { id: "61047", name: "AZARIO, FRANCISCO", codes: Array(31).fill("") },
-      { id: "62081", name: "CUADRA, CAMILA", codes: Array(31).fill("") },
-      { id: "61996", name: "REORUELLO, MILAGROS", codes: Array(31).fill("") },
-      { id: "62046", name: "ALONSO, BRENDA", codes: Array(31).fill("") },
-      { id: "60894", name: "GIAGNINI, DIEGO", codes: Array(31).fill("") },
-      { id: "62117", name: "PIÑERO, JULIAN", codes: Array(31).fill("") },
-      { id: "50592", name: "ALVAREZ, CECILIA", codes: Array(31).fill("") },
-      { id: "60796", name: "GIORGIO, JOSE", codes: Array(31).fill("") },
-      { id: "62085", name: "PEREZ, SANTIAGO", codes: Array(31).fill("") },
-      { id: "60698", name: "LUNA, GABRIEL", codes: Array(31).fill("") },
-      { id: "61970", name: "LEGUIZAMON, AGUSTINA", codes: Array(31).fill("") },
-      { id: "60458", name: "SATTLER, CECILIA", codes: Array(31).fill("") },
-      { id: "62116", name: "AIRALA, LUCIANA", codes: Array(31).fill("") },
-      { id: "61915", name: "IGLESIAS, GISEL", codes: Array(31).fill("") },
-      { id: "61008", name: "LEYES, GUSTAVO", codes: Array(31).fill("") },
-      { id: "61957", name: "BARRIONUEVO, LEANDRO", codes: Array(31).fill("") },
-      { id: "62115", name: "DI RUSSO, MARTINA", codes: Array(31).fill("") }
-    ];
-    const SEED_SEP = [
-      { id: "49548", name: "MELO, NATALIA", codes: ["T", "T", "T", "T", "T3", "T", "MS", "E", "F", "N", "X", "N", "T", "T3", "MS", "F", "F", "E", "N", "T", "T", "MS", "F", "F", "E", "N", "N", "T", "T3", "MS"] },
-      { id: "50564", name: "SIPUENTES, DENISSE", codes: ["F", "N", "T", "T", "TE", "MS", "F", "F", "E", "N", "T", "T", "T", "MS", "F", "F", "X", "N", "N", "T", "T", "T", "MS", "F", "E", "N", "T", "T", "T", "MS"] },
-      { id: "50592", name: "ÁLVAREZ, CECILIA", codes: ["T3", "14F", "E", "T", "MS", "MD", "F", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "N", "IN", "T", "T3", "MS", "F", "N"] },
-      { id: "50788", name: "LOPEZ, EVELYN", codes: ["N", "E", "N", "N", "TE", "T", "MS", "E", "N", "T", "TE", "MS", "MD", "F", "F", "F", "F", "F", "F", "N", "E", "N", "N", "N", "T", "MS", "E", "N", "N", "T"] },
-      { id: "50824", name: "ABALSAMO, SANTIAGO", codes: ["MS", "T", "T", "TE", "T", "MS", "E", "N", "T", "T", "T", "T3", "MS", "E", "N", "N", "T", "TE", "MS", "E", "N", "T", "T", "MS", "F", "F", "F", "F", "F", "F"] },
-      { id: "50827", name: "TRIVIÑO, JOAQUIN", codes: ["MS", "T", "MS", "T3", "T", "MS", "F", "F", "T", "MS", "TE", "T3", "T", "T", "MS", "F", "F", "TE", "T", "T3", "T", "MS", "F", "F", "T", "TE", "T", "T", "MS", "T"] },
-      { id: "50863", name: "TRAVERSO, GASPAR", codes: ["F", "F", "N", "E", "N", "N", "T", "T3", "F", "N", "N", "E", "N", "T", "MS", "F", "F", "E", "N", "N", "E", "N", "T", "T", "F", "X", "N", "N", "T", "T"] },
-      { id: "50961", name: "GONZÁLEZ, KEVIN", codes: ["T", "MS", "F", "E", "N", "T", "T", "MS", "F", "E", "N", "TE", "MS", "F", "F", "DV", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "DV", "F", "E", "N"] },
-      { id: "50978", name: "ALI, GERONIMO", codes: ["T", "T", "T", "T3", "MS", "T3", "T", "MS", "F", "F", "X", "N", "N", "T", "T", "T", "MS", "F", "E", "N", "N", "N", "T", "T", "MS", "F", "F", "E", "E", "T"] },
-      { id: "60454", name: "OLMEDO, MYRIAM", codes: ["F", "T", "T", "T", "TE", "T3", "T", "MS", "F", "F", "T", "TE", "T", "T", "MS", "F", "F", "TE", "T", "T", "T", "MS", "T", "MS", "F", "TE", "T", "T", "MS", "T"] },
-      { id: "60458", name: "SATTLER, CECILIA", codes: ["T", "T", "MS", "F", "X", "N", "T", "T3", "T", "T", "MS", "F", "F", "E", "N", "T", "T", "T3", "MS", "F", "F", "E", "N", "N", "TE", "MS", "T3", "MS", "F", "N"] },
-      { id: "60666", name: "AGUIAR, RAMON", codes: ["MS", "T", "MS", "MD", "F", "F", "N", "N", "T", "T", "TE", "MS", "F", "F", "N", "N", "X", "T", "TE", "T", "T3", "F", "N", "X", "N", "T", "T", "T3", "MS", "F"] },
-      { id: "60698", name: "LUNA, GABRIEL", codes: ["BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ"] },
-      { id: "60754", name: "FAISAL, ALEJANDRO", codes: ["F", "F", "T", "T", "TE", "T3", "T", "T", "F", "F", "T", "T3", "T", "T", "T", "MS", "F", "T", "T", "MS", "T", "TP", "MS", "T", "F", "TE", "MS", "T", "T", "T"] },
-      { id: "60796", name: "GIORGIO, JOSE", codes: ["T", "T", "T3", "F", "N", "N", "E", "N", "T", "T", "MS", "F", "F", "E", "N", "N", "T", "TE", "MS", "F", "F", "N", "N", "E", "N", "TE", "T", "MS", "F", "N"] },
-      { id: "60856", name: "SIMONIT, CARLA", codes: ["E", "N", "T", "MS", "F", "F", "N", "E", "T", "T", "MS", "MD", "F", "F", "N", "N", "N", "T", "TE", "T", "T3", "F", "N", "X", "N", "IN", "T3", "T", "MS", "F"] },
-      { id: "60894", name: "GIAGNINI, DIEGO", codes: ["F", "N", "N", "E", "N", "E", "N", "N", "N", "T", "F", "N", "E", "N", "N", "N", "N", "TE", "F", "F", "N", "E", "N", "E", "N", "T", "F", "F", "E", "N"] },
-      { id: "60926", name: "FARRADO, MARIANO", codes: ["F", "F", "T", "TE", "TE", "T", "MS", "F", "F", "T", "T", "TE", "T", "T", "T3", "MS", "F", "TE", "T", "MS", "T", "T", "T", "T", "F", "TE", "MS", "T", "T", "T"] },
-      { id: "60934", name: "SÁNCHEZ, MARIANGELES", codes: ["LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "F", "E", "N", "E", "N", "T", "T3", "MS", "F", "E", "N", "N", "N", "T"] },
-      { id: "60996", name: "GODOY, WALTER", codes: ["T", "MS", "MS", "T", "T3", "T", "MS", "F", "F", "F", "E", "N", "T3", "MS", "MS", "F", "F", "E", "N", "T", "MS", "T", "MS", "F", "E", "N", "T", "MS", "T", "MS"] },
-      { id: "61008", name: "LEYES, GUSTAVO", codes: ["N", "N", "T", "F", "E", "N", "N", "N", "N", "E", "N", "F", "F", "N", "N", "E", "N", "N", "T3", "F", "F", "E", "N", "N", "E", "N", "N", "F", "F", "N"] },
-      { id: "61009", name: "LUCERO, GERALDINA", codes: ["BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ"] },
-      { id: "61047", name: "AZARIO, FRANCISCO", codes: ["T", "T3", "F", "X", "N", "N", "T", "T", "MS", "F", "F", "N", "E", "N", "N", "T", "T", "MS", "F", "E", "N", "NP", "T", "T", "MS", "MD", "F", "F", "N", "E"] },
-      { id: "61049", name: "SÁNCHEZ, CLAUDIO", codes: ["LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "F", "X", "N", "T3", "T", "T", "T3", "MS", "F", "E", "N", "N", "T", "T"] },
-      { id: "61051", name: "DÍAZ, JESÚS", codes: ["N", "N", "X", "N", "TE", "T", "MS", "F", "N", "N", "TE", "MS", "MD", "F", "F", "F", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO"] },
-      { id: "61172", name: "AGÜERO, JONATHAN", codes: ["N", "N", "X", "N", "T", "MS", "F", "F", "F", "F", "F", "F", "E", "N", "N", "T", "T", "MS", "T3", "MS", "E", "N", "N", "N", "T", "T3", "MS", "N", "N", "N"] },
-      { id: "61184", name: "ORTIZ, OSCAR", codes: ["N", "E", "N", "N", "F", "F", "F", "N", "N", "N", "E", "E", "N", "N", "F", "N", "E", "N", "X", "N", "N", "N", "F", "N", "N", "X", "N", "N", "N", "F"] },
-      { id: "61199", name: "LAFARGA, CARLA", codes: ["T3", "T", "MS", "MD", "F", "F", "N", "T", "T3", "T", "TE", "MS", "F", "F", "MS", "T3", "T", "T", "TE", "T", "MS", "F", "IN", "T", "TE", "T", "T3", "T", "MS", "F"] },
-      { id: "61208", name: "PREITO, CECILIA", codes: ["BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ", "BLOQ"] },
-      { id: "61439", name: "FERNANDEZ, PAULA", codes: ["T", "FC", "N", "X", "E", "E", "N", "F", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "F"] },
-      { id: "61911", name: "ACOSTA, ADA", codes: ["T3", "T", "T", "MS", "F", "F", "T", "T", "T", "T", "T3", "MS", "F", "F", "T", "MS", "T", "TE", "T3", "T", "MS", "F", "T3", "T", "T", "T3", "MS", "T", "T", "F"] },
-      { id: "61912", name: "ARES, TADEO", codes: ["LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "E", "N", "T", "T", "T3", "T", "MS", "MD", "F", "F", "E", "N", "T", "T", "TE", "MS", "F", "F", "N", "N"] },
-      { id: "61915", name: "IGLESIAS, GISEL", codes: ["T", "T", "T3", "F", "E", "N", "N", "N", "T", "T3", "MS", "F", "F", "N", "E", "N", "T", "MS", "MD", "F", "F", "N", "E", "TP", "TP", "T3", "T", "T", "T", "F"] },
-      { id: "61918", name: "ORIETA, BRENDA", codes: ["T", "MS", "F", "E", "N", "T", "T", "MS", "F", "E", "N", "TE", "MS", "F", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "N"] },
-      { id: "61919", name: "PÉREZ, ITATÍ", codes: ["E", "N", "N", "TE", "T", "MS", "F", "F", "N", "N", "N", "N", "T", "MS", "F", "E", "N", "N", "TE", "T3", "T", "T", "MS", "F", "F", "N", "N", "N", "T", "T"] },
-      { id: "61920", name: "ROJAS, CINTIA", codes: ["N", "N", "E", "N", "E", "N", "FC", "E", "N", "X", "N", "T", "N", "N", "N", "T", "MS", "F", "F", "F", "F", "F", "F", "N", "N", "N", "N", "N", "N", "E"] },
-      { id: "61945", name: "ORIETA, BELÉN", codes: ["N", "N", "E", "N", "N", "F", "F", "N", "N", "N", "N", "E", "N", "N", "F", "E", "E", "N", "N", "N", "N", "F", "F", "N", "X", "N", "N", "E", "N", "F"] },
-      { id: "61951", name: "SEMENZA, AGUSTINA", codes: ["MS", "T", "T", "MS", "F", "F", "N", "T", "MS", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "F", "N", "T", "TE", "T3", "MS", "F", "N", "T", "T3", "TE", "T", "T", "MS", "F"] },
-      { id: "61953", name: "ZUBILLAGA, LUZ", codes: ["MS", "F", "F", "TE", "MS", "T", "T3", "T", "MS", "F", "E", "N", "N", "T", "T3", "T", "T3", "F", "E", "N", "N", "T", "T", "MS", "MD", "F", "F", "N", "N", "T"] },
-      { id: "61957", name: "BARRIONUEVO, LEANDRO", codes: ["T", "T", "T", "F", "E", "N", "N", "T", "T3", "MS", "MD", "T", "F", "N", "E", "N", "T", "T3", "MS", "F", "F", "NP", "E", "TE", "MS", "T", "MS", "F", "F", "E"] },
-      { id: "61962", name: "DÍAZ, VALENTÍN", codes: ["T", "T", "MS", "F", "F", "T3", "T", "T", "MS", "F", "TE", "MS", "T", "T", "T", "T", "MS", "F", "TE", "MS", "T", "T", "T", "MS", "MD", "F", "F", "T", "T", "T3"] },
-      { id: "61970", name: "LEGUIZAMON, AGUSTINA", codes: ["T", "T3", "MS", "F", "X", "N", "N", "N", "T", "T3", "MS", "F", "F", "E", "N", "N", "T", "MS", "MD", "F", "F", "N", "E", "TP", "TP", "TE", "T", "MS", "F", "N"] },
-      { id: "61971", name: "MARTINEZ, DANTE", codes: ["N", "E", "N", "T", "TE", "T", "MS", "F", "F", "N", "N", "X", "N", "T", "MS", "F", "F", "N", "N", "T", "T", "T3", "F", "F", "E", "N", "T3", "T", "T", "MS"] },
-      { id: "61975", name: "PAVON, ALAN", codes: ["N", "E", "T", "MS", "MD", "F", "F", "N", "N", "T", "T3", "TE", "MS", "F", "N", "T", "MS", "MD", "F", "N", "T3", "MS", "F", "N", "TE", "MS", "MD", "F", "E", "N"] },
-      { id: "61980", name: "CARRIZO, LEONEL", codes: ["T", "MS", "F", "F", "N", "E", "N", "T", "MS", "F", "N", "E", "N", "N", "T", "T", "T3", "F", "E", "N", "N", "N", "T", "T", "T3", "F", "F", "N", "N", "E"] },
-      { id: "61989", name: "ROMERO, ANTONELLA", codes: ["MS", "T", "T", "T3", "MS", "F", "F", "T", "T", "MS", "TE", "T", "T3", "MS", "F", "F", "T", "T", "MS", "MD", "T", "MS", "F", "F", "TE", "T", "MS", "T3", "T", "MS"] },
-      { id: "61996", name: "REORUELLO, MILAGROS", codes: ["T", "MS", "F", "TE", "T3", "T", "T", "T", "T", "MS", "F", "T", "T3", "MS", "T", "T", "T", "MS", "F", "T", "T", "MS", "T", "T", "MS", "F", "F", "F", "T", "T"] },
-      { id: "62033", name: "CEJA, CELESTE", codes: ["F", "MS", "T", "MS", "MD", "F", "F", "T", "MS", "T3", "T", "TE", "T3", "T", "MS", "F", "N", "TE", "MS", "MD", "T", "T3", "F", "T", "T", "T3", "MS", "T", "MS", "F"] },
-      { id: "62034", name: "RIVERO, INGRID", codes: ["MS", "T", "T", "MS", "F", "F", "T", "T", "T", "T", "MS", "MD", "F", "F", "T", "T3", "T", "MS", "TE", "T3", "MS", "F", "IN", "T3", "TE", "IN", "T", "T", "T3", "F"] },
-      { id: "62046", name: "ALONSO, BRENDA", codes: ["T", "T3", "F", "T", "MS", "MD", "T3", "T", "T", "MS", "F", "T", "T3", "T", "T", "T", "T", "MS", "F", "F", "T", "T", "T", "T", "MS", "MD", "F", "F", "T", "T3"] },
-      { id: "62047", name: "ORTIZ, NICOLÁS", codes: ["E", "N", "N", "N", "F", "F", "E", "N", "N", "N", "E", "N", "F", "F", "N", "N", "N", "N", "X", "N", "N", "F", "N", "N", "E", "N", "N", "E", "N", "F"] },
-      { id: "62049", name: "ACEVEDO, LAUTARO", codes: ["F", "F", "T", "TE", "MS", "T3", "T", "T", "MS", "F", "TE", "TE", "T", "MS", "T", "T", "MS", "F", "T", "T", "MS", "T", "T", "T", "MS", "F", "E", "T", "T", "T3"] },
-      { id: "62053", name: "ORONA, AGUSTIN", codes: ["LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "F", "T", "T3", "T", "MS", "F", "TE", "T3", "MS", "T", "T", "T", "MS", "F", "TE", "MS", "T", "T", "T"] },
-      { id: "62081", name: "CUADRA, CAMILA", codes: ["T", "MS", "F", "E", "N", "N", "T", "T3", "T", "MS", "F", "E", "N", "T", "T", "MS", "T", "F", "E", "N", "T", "TP", "T", "T3", "MS", "F", "F", "F", "N", "N"] },
-      { id: "62085", name: "PÉREZ, SANTIAGO", codes: ["N", "N", "N", "F", "N", "E", "N", "N", "N", "E", "N", "F", "F", "N", "N", "E", "N", "N", "T", "F", "F", "N", "N", "E", "N", "E", "N", "N", "F", "N"] },
-      { id: "62087", name: "VENTRIGLIA, ANA", codes: ["N", "N", "T", "TE", "T3", "MS", "F", "F", "E", "N", "T", "TE", "T", "MS", "F", "F", "E", "N", "N", "T", "T", "MS", "F", "F", "E", "TE", "T", "T", "T", "MS"] },
-      { id: "62093", name: "DOMINGUEZ, VICTORIA", codes: ["F", "F", "N", "N", "T3", "T", "T", "MS", "F", "F", "E", "N", "T", "T3", "T", "MS", "F", "E", "N", "T", "T", "T", "MS", "T", "F", "E", "N", "N", "T", "T"] },
-      { id: "62095", name: "GONZÁLEZ, SANTIAGO", codes: ["E", "N", "N", "N", "F", "F", "N", "N", "E", "N", "E", "N", "F", "F", "N", "N", "N", "X", "N", "N", "N", "F", "N", "N", "X", "N", "N", "E", "N", "F"] },
-      { id: "62104", name: "ÁLVAREZ, JULIAN", codes: ["N", "N", "T", "TE", "MS", "F", "F", "N", "N", "T", "TE", "T", "MS", "F", "F", "N", "N", "T", "T3", "MS", "T", "T3", "F", "F", "E", "N", "T", "T3", "T", "MS"] },
-      { id: "62106", name: "TEVEZ, VALENTIN", codes: ["F", "F", "E", "N", "TE", "T", "T3", "MS", "F", "N", "N", "E", "N", "T", "T", "MS", "F", "E", "N", "T", "T", "T", "MS", "F", "F", "E", "N", "N", "T", "T"] },
-      { id: "62108", name: "BORRAJO, NAHUEL", codes: ["N", "N", "N", "E", "N", "F", "F", "F", "N", "N", "N", "X", "E", "N", "F", "N", "E", "N", "E", "N", "N", "N", "F", "N", "N", "N", "E", "N", "N", "F"] },
-      { id: "62109", name: "GOLDSCHLAGER, UMA", codes: ["N", "N", "N", "T", "T", "MS", "F", "F", "E", "N", "T", "TE", "MS", "N", "F", "F", "X", "N", "TE", "MS", "N", "N", "N", "F", "F", "E", "N", "N", "N", "N"] },
-      { id: "62110", name: "IRALA, MICAELA", codes: ["N", "N", "N", "TE", "T", "T", "MS", "E", "N", "T", "T", "T3", "MS", "F", "F", "F", "F", "F", "F", "E", "N", "E", "N", "T", "T", "MS", "E", "N", "N", "T"] },
-      { id: "62112", name: "MENDOZA, NADIA", codes: ["T", "T", "T", "MS", "F", "F", "E", "T", "T", "T", "T3", "MS", "F", "F", "T", "T3", "T", "T", "TE", "T", "MS", "F", "T", "T3", "TE", "MS", "MD", "T", "T3", "F"] },
-      { id: "62113", name: "STAHL, SASHA", codes: ["F", "F", "N", "N", "TE", "T", "T", "MS", "F", "T", "MS", "T3", "T", "T", "T", "T", "T3", "F", "E", "N", "N", "T", "T", "T", "MS", "F", "F", "N", "N", "T"] },
-      { id: "62114", name: "GODMAN, ORIANA", codes: ["F", "F", "N", "E", "E", "N", "T", "T", "T3", "F", "N", "E", "N", "T", "T", "T", "MS", "F", "E", "N", "N", "T", "MS", "T", "T3", "F", "F", "E", "N", "T"] },
-      { id: "62115", name: "DI RUSSO, MARTINA", codes: ["T", "T", "T3", "F", "E", "N", "N", "T", "T", "MS", "MD", "F", "F", "N", "E", "N", "T", "T3", "MS", "T", "F", "N", "E", "N", "TE", "T3", "T", "MS", "F", "N"] },
-      { id: "62116", name: "AIRALA, LUCIANA", codes: ["N", "N", "N", "F", "N", "N", "N", "N", "N", "X", "N", "F", "F", "N", "E", "N", "N", "E", "N", "F", "F", "N", "N", "E", "N", "N", "E", "N", "F", "N"] }
-    ];
-    // Plantel cajeros (noviembre 2026), desde el afiche "CAJEROS VENTA PAGO NOVIEMBRE 2026".
-    // Sin Álvarez, Cecilia (50592): pasó a otro casino. Filas tachadas = LIC.
-    const SEED_NOV = [
-      { id: "62047", name: "ORTIZ, NICOLÁS", codes: ["F", "F", "N", "E", "N", "N", "E", "N", "F", "F", "N", "N", "E", "N", "N", "N", "N", "F", "X", "N", "E", "N", "N", "N", "N", "F", "E", "N", "E", "N"] },
-      { id: "61199", name: "LAFARGA", codes: ["F", "F", "T", "T", "T", "MS", "T3", "TE", "MS", "F", "T", "T", "TE", "MS", "T3", "T", "MS", "F", "T", "T", "T", "TE", "MS", "T", "MS", "F", "F", "T", "T3", "MS"] },
-      { id: "62112", name: "MENDOZA", codes: ["F", "F", "T", "T", "MS", "TE", "T3", "TE", "MS", "F", "T", "T", "TE", "T", "T", "MS", "F", "F", "T", "TE", "T", "MS", "T", "T3", "MS", "F", "TE", "T3", "MS", "T"] },
-      { id: "60666", name: "AGUIAR", codes: ["F", "F", "N", "E", "T", "TE", "TE", "TE", "MS", "F", "N", "T", "MS", "MD", "T", "T3", "MS", "F", "E1", "N", "TE", "T", "MS", "T", "F", "F", "X", "N", "T", "T"] },
-      { id: "62095", name: "GONZÁLEZ, SANTI", codes: ["F", "F", "N", "N", "X", "N", "N", "X", "N", "F", "N", "N", "N", "N", "N", "N", "N", "F", "E", "N", "N", "E", "N", "N", "F", "F", "X", "N", "N", "N"] },
-      { id: "61951", name: "SEMENZA", codes: ["F", "F", "N", "N", "T", "TE", "T3", "MS", "F", "F", "N", "N", "TE", "T3", "MS", "T", "MS", "F", "N", "T", "TE", "T", "MS", "T", "MS", "F", "N", "TE", "T3", "MS"] },
-      { id: "62034", name: "RIVERO", codes: ["F", "F", "T", "T", "N", "TE", "T", "MS", "F", "F", "T", "N", "TE", "MS", "T3", "N", "T", "MS", "F", "T", "TE", "T3", "N", "T", "T", "F", "TE", "T3", "T", "N"] },
-      { id: "61172", name: "AGÜERO", codes: ["F", "F", "E", "N", "T", "MS", "T", "T", "MS", "F", "N", "E", "N", "T3", "T", "T", "MS", "F", "E1", "N", "T", "TE", "MS", "T", "MS", "F", "F", "E", "N", "T"] },
-      { id: "61911", name: "ACOSTA", codes: ["F", "F", "F", "T", "T", "MS", "TE", "T3", "MS", "F", "T", "T", "MS", "TE", "T", "MS", "T", "F", "T", "TE", "T3", "MS", "T", "T", "T", "F", "TE", "TE", "MS", "T"] },
-      { id: "60856", name: "SIMONIT", codes: ["F", "F", "N", "E", "N", "T", "T3", "TE", "MS", "F", "N", "E", "N", "TE", "T", "T", "MS", "F", "F", "E", "N", "TE", "T", "MS", "T", "F", "E", "N", "T", "T"] },
-      { id: "62108", name: "BORRAJO", codes: ["N", "N", "F", "F", "X", "N", "E", "E", "N", "N", "F", "F", "N", "E", "N", "N", "N", "T", "F", "E", "N", "N", "N", "N", "N", "N", "F", "E", "N", "N"] },
-      { id: "61184", name: "ORTIZ, OSCAR", codes: ["E", "N", "F", "F", "N", "E", "N", "N", "E", "N", "F", "F", "N", "X", "N", "N", "N", "T", "F", "X", "N", "N", "E", "N", "N", "N", "F", "FC", "E", "N"] },
-      { id: "61920", name: "ROJAS", codes: ["T", "F", "F", "N", "N", "N", "X", "N", "N", "N", "F", "E", "N", "E", "N", "N", "N", "N", "F", "F", "E", "X", "N", "N", "N", "N", "F", "E", "N", "N"] },
-      { id: "61989", name: "ROMERO", codes: ["LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC"] },
-      { id: "61975", name: "PAVÓN", codes: ["MS", "T", "T3", "MS", "F", "F", "T", "T3", "T", "TE", "MS", "T3", "F", "F", "T", "T", "MS", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO"] },
-      { id: "61945", name: "ORIETA, BELÉN", codes: ["N", "N", "F", "N", "E1", "N", "N", "X", "N", "N", "F", "F", "E", "N", "N", "N", "N", "N", "F", "N", "E", "N", "N", "N", "E", "N", "F", "E", "N", "N"] },
-      { id: "61919", name: "PÉREZ, ITATÍ", codes: ["T", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "E", "N", "T3", "MS", "TE", "T3", "T", "MS", "F", "F", "E", "N", "T"] },
-      { id: "62033", name: "CEJA", codes: ["MS", "MS", "F", "F", "T", "TE", "MS", "T3", "T", "MS", "F", "T", "T3", "MS", "MD", "MS", "F", "F", "T", "TE", "T3", "MS", "T", "T", "MS", "F", "TE", "T3", "MS", "T"] },
-      { id: "62104", name: "ÁLVAREZ, JULIAN", codes: ["MS", "F", "F", "N", "N", "N", "T", "T", "T3", "MS", "F", "F", "E", "N", "T", "T", "T", "MS", "F", "E", "N", "TE", "T", "MS", "T", "MS", "F", "X", "N", "T"] },
-      { id: "62110", name: "IRALA", codes: ["N", "E", "N", "N", "T", "T", "F", "E", "N", "TE", "T", "T", "MS", "F", "E", "N", "N", "N", "T", "TE", "T3", "MS", "T", "T", "T", "MS", "F", "F", "F", "F"] },
-      { id: "61208", name: "PRETTO", codes: ["LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC"] },
-      { id: "49548", name: "MELO", codes: ["T", "T3", "MS", "F", "N", "T", "TE", "MS", "MD", "TE", "MS", "F", "E", "T", "T", "T", "T", "T3", "MS", "F", "T", "T", "T", "T3", "T", "MS", "F", "F", "F", "DV"] },
-      { id: "50788", name: "LÓPEZ", codes: ["N", "N", "T", "T", "MS", "X", "E", "E", "E", "N", "T", "T", "T3", "MS", "MD", "FC", "F", "F", "F", "F", "F", "F", "E", "N", "N", "T", "TE", "T3", "MS", "N"] },
-      { id: "60996", name: "GODOY", codes: ["T", "MS", "MS", "F", "F", "E", "N", "TE", "MS", "T", "MS", "F", "E", "N", "T", "MS", "T", "MS", "F", "X", "N", "E", "T", "T3", "MS", "MS", "MD", "F", "F", "MS"] },
-      { id: "61971", name: "MARTÍNEZ", codes: ["T", "MS", "F", "N", "E", "N", "N", "T", "T3", "MS", "F", "F", "E", "N", "T", "T", "T", "T", "MS", "F", "X", "N", "T", "T", "T3", "T", "MS", "F", "F", "N"] },
-      { id: "62087", name: "VENTRIGLIA", codes: ["T", "MS", "F", "F", "N", "TE", "MS", "T", "T", "TE", "MS", "T", "T3", "F", "N", "N", "T", "T", "MS", "F", "N", "T3", "T", "T", "T", "MS", "MD", "F", "F", "N"] },
-      { id: "50564", name: "SIFUENTES", codes: ["T", "T3", "MS", "F", "E", "N", "TE", "TE", "T", "MS", "F", "F", "E", "N", "T", "T", "T", "T", "MS", "F", "E", "N", "T", "T", "T3", "T", "MS", "F", "F", "E"] },
-      { id: "61051", name: "DÍAZ, JESÚS", codes: ["T", "T", "T3", "T", "MS", "F", "F", "E", "N", "TE", "MS", "F", "X", "N", "N", "T", "T", "T", "MS", "F", "E", "N", "E", "N", "T", "T", "MS", "F", "F", "E"] },
-      { id: "62109", name: "GOLDSCHLAGER", codes: ["MS", "N", "F", "F", "E", "T", "MS", "MD", "E", "N", "T", "F", "N", "TE", "MS", "N", "E", "N", "N", "F", "E", "N", "N", "E", "N", "N", "T", "F", "F", "E"] },
-      { id: "60926", name: "PARRADO", codes: ["T", "T", "T", "T", "F", "F", "T", "TE", "T", "T", "T", "T", "F", "TE", "T3", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO"] },
-      { id: "50863", name: "TRAVERSO", codes: ["E", "N", "T", "MS", "F", "E", "N", "T3", "T", "MS", "F", "F", "X", "E", "T", "T", "T", "MS", "T", "MS", "F", "F", "N", "N", "T", "T", "MS", "MD", "F", "DV"] },
-      { id: "62053", name: "ORONÁ", codes: ["MD", "T", "T3", "MS", "F", "T", "TE", "MS", "MD", "T", "MS", "F", "TE", "T", "MS", "T3", "T", "T", "T", "MS", "F", "F", "T3", "T", "T", "T", "MS", "MD", "F", "F"] },
-      { id: "60934", name: "SÁNCHEZ, TOTI", codes: ["T", "T", "T", "MS", "F", "E", "N", "N", "T", "T3", "MD", "MS", "F", "X", "N", "T", "T", "T3", "T", "MS", "F", "F", "N", "E", "N", "T", "T3", "MS", "F", "F"] },
-      { id: "61439", name: "FERNÁNDEZ", codes: ["N", "N", "E", "N", "F", "N", "N", "E", "N", "E", "N", "N", "F", "E", "N", "N", "E", "N", "N", "N", "F", "F", "N", "N", "E", "N", "N", "TE", "F", "F"] },
-      { id: "61049", name: "SÁNCHEZ, CL", codes: ["T", "T", "MS", "F", "N", "E", "X", "N", "T", "T", "T", "MS", "F", "F", "E", "E", "E", "T", "T", "MS", "F", "F", "N", "N", "N", "T", "TE", "MS", "MD", "F"] },
-      { id: "60454", name: "OLMEDO", codes: ["T3", "T", "MS", "F", "T", "TE", "TE", "MS", "F", "14F", "T", "MS", "F", "TE", "T", "T3", "MS", "T", "MS", "MD", "F", "TE", "T", "MS", "T", "MS", "T3", "MS", "F", "F"] },
-      { id: "62106", name: "TEVEZ", codes: ["E", "N", "T", "MS", "F", "X", "N", "E", "T", "T", "T", "MS", "F", "E", "E", "T", "T3", "T", "T", "MS", "F", "F", "N", "E", "N", "T", "T3", "MS", "F", "F"] },
-      { id: "60754", name: "FAISAL", codes: ["T3", "T", "T", "MS", "F", "F", "TE", "MS", "T", "MS", "F", "T", "TE", "TE", "MS", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO"] },
-      { id: "62093", name: "DOMÍNGUEZ", codes: ["T3", "T", "T", "MS", "F", "E", "N", "TE", "T", "TE", "T", "MS", "F", "E", "N", "T", "T3", "T", "MS", "MD", "F", "F", "N", "N", "N", "T", "TE", "MS", "F", "F"] },
-      { id: "62114", name: "GODMAN", codes: ["N", "E", "N", "T", "F", "F", "E", "E", "N", "T", "T3", "T", "MS", "F", "F", "E", "N", "T", "T", "TE", "MS", "F", "F", "N", "N", "T", "T", "MS", "T3", "T"] },
-      { id: "62113", name: "STAHL", codes: ["T3", "T", "MS", "T", "F", "F", "E", "N", "T", "T", "T3", "T", "MS", "F", "F", "N", "N", "T", "T", "MS", "MD", "F", "F", "N", "N", "T", "T", "TE", "T3", "MS"] },
-      { id: "50978", name: "ALÍ", codes: ["E", "T", "F", "F", "T", "T3", "T3", "MS", "F", "DV", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO"] },
-      { id: "61953", name: "ZUBILLAGA", codes: ["MS", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "T3", "MS", "T3", "T3", "MD", "F", "F", "T", "T3", "T", "MS", "TE", "T3", "F"] },
-      { id: "61962", name: "DÍAZ, VALENTÍN", codes: ["MD", "T", "MS", "T3", "T", "MS", "MD", "MD", "FC", "F", "F", "F", "F", "F", "F", "T", "T", "MS", "T", "TE", "MS", "TE", "T3", "T", "T", "T3", "MS", "TE", "T", "T"] },
-      { id: "61980", name: "CARRIZO", codes: ["N", "E", "N", "T", "MS", "F", "E", "N", "N", "TE", "T3", "T", "MS", "F", "F", "E", "N", "T", "T", "MS", "F", "E", "T", "F", "N", "F", "E", "N", "T", "T3"] },
-      { id: "50827", name: "TRIVIÑO", codes: ["MS", "T3", "T", "T", "MS", "F", "TE", "T3", "T", "TE", "T", "MS", "MD", "F", "F", "T", "T", "MS", "T3", "T", "MS", "F", "F", "F", "T", "T3", "T", "TE", "T", "MS"] },
-      { id: "61009", name: "LUCERO", codes: ["LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC"] },
-      { id: "50824", name: "ABALSAMO", codes: ["N", "N", "N", "T", "T3", "F", "E", "N", "N", "T", "T", "T3", "MS", "F", "F", "E", "N", "T", "T", "TE", "MS", "F", "F", "E", "N", "T", "TE", "MS", "MD", "F"] },
-      { id: "62049", name: "ACEVEDO", codes: ["T", "MS", "T", "T3", "F", "F", "TE", "TE", "T3", "MS", "F", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "T", "T3"] },
-      { id: "61912", name: "ARES", codes: ["N", "N", "T", "T", "T3", "MS", "F", "F", "N", "E", "T", "T3", "T", "MS", "F", "N", "N", "T", "T3", "TE", "TE", "MS", "MD", "FC", "FC", "F", "F", "F", "E", "N"] },
-      { id: "61918", name: "ORIETA, BRENDA", codes: ["N", "T", "T", "T3", "MS", "MD", "F", "F", "N", "X", "N", "T", "TE", "MS", "F", "F", "N", "E", "N", "T3", "MS", "MD", "F", "F", "E", "N", "T", "T3", "MS", "T"] },
-      { id: "50961", name: "GONZÁLEZ, KEVIN", codes: ["N", "E", "T", "T", "T3", "MS", "F", "F", "N", "X", "N", "X", "T", "T", "MS", "F", "N", "E", "N", "T", "MS", "MD", "F", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "E"] },
-      { id: "61047", name: "AZARIO", codes: ["T3", "MS", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "E", "E", "N", "T", "MS", "FC", "F", "E", "N"] },
-      { id: "62081", name: "CUADRA", codes: ["N", "T", "T", "T", "T", "T3", "F", "F", "E", "TE", "MS", "T", "TE", "MS", "F", "F", "E", "N", "T", "T", "T3", "T", "MS", "F", "F", "E", "N", "N", "T", "T3"] },
-      { id: "61996", name: "REDRUELLO", codes: ["T", "MS", "T", "T", "MS", "MD", "F", "F", "T", "T3", "T", "MS", "MD", "MD", "F", "F", "T", "T3", "T", "TE", "TE", "T3", "MS", "F", "F", "T", "TE", "TE", "MS", "T"] },
-      { id: "62046", name: "ALONSO", codes: ["MS", "T", "T", "T", "T", "T3", "F", "F", "T", "T3", "MD", "T", "TE", "T3", "F", "F", "T", "T", "T", "T", "T3", "MS", "F", "F", "T", "T3", "T", "TE", "MS", "T"] },
-      { id: "60894", name: "GUAGNINI", codes: ["LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "X", "X", "N", "F", "E", "N", "E", "N", "N", "N"] },
-      { id: "62117", name: "PIÑERO, JULIAN", codes: ["N", "N", "N", "E", "N", "T", "F", "F", "N", "N", "N", "E1", "N", "TE", "F", "F", "N", "N", "N", "E", "N", "TE", "F", "F", "N", "E", "N", "E", "N", "T"] },
-      { id: "60796", name: "GIORGIO", codes: ["F", "N", "E", "N", "T", "MS", "MD", "F", "F", "E", "E", "N", "T", "T", "MS", "F", "F", "E", "N", "N", "TE", "T3", "T", "MS", "F", "E", "N", "E", "T", "T"] },
-      { id: "62085", name: "PÉREZ, SANTIAGO", codes: ["F", "F", "N", "N", "E1", "N", "N", "F", "F", "E", "N", "E1", "N", "N", "N", "N", "F", "N", "N", "E", "N", "E", "N", "T", "F", "N", "E", "X", "N", "N"] },
-      { id: "60698", name: "LUNA", codes: ["LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC", "LIC"] },
-      { id: "61970", name: "LEGUIZAMÓN", codes: ["F", "N", "N", "N", "T", "T", "MS", "F", "F", "E", "N", "N", "T", "TE", "T3", "MS", "F", "N", "N", "N", "T", "T3", "MS", "F", "F", "X", "N", "T", "T", "MS"] },
-      { id: "60458", name: "SATTLER", codes: ["LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "LAO", "F", "F", "E", "N", "N", "T", "T3", "T", "MS", "F", "N", "E", "N", "TE", "TE", "T3", "MS", "F", "E1", "N", "N", "T", "T"] },
-      { id: "62116", name: "AIRALA", codes: ["F", "F", "N", "N", "E1", "N", "T", "F", "F", "N", "N", "N", "N", "E", "N", "N", "F", "N", "E1", "E", "N", "E", "N", "T", "F", "N", "E", "N", "N", "N"] },
-      { id: "61915", name: "IGLESIAS", codes: ["F", "N", "N", "N", "T", "TE", "MS", "F", "F", "N", "E", "N", "T", "TE", "T3", "MS", "F", "N", "N", "T", "TE", "MS", "MD", "F", "F", "E1", "N", "T", "T", "MS"] },
-      { id: "61008", name: "LEYES", codes: ["LAO", "LAO", "LAO", "LAO", "N", "E", "N", "F", "F", "E", "N", "X", "N", "N", "E", "N", "F", "N", "E", "E", "N", "E", "N", "N", "F", "N", "E", "N", "N", "N"] },
-      { id: "61957", name: "BARRIONUEVO", codes: ["F", "N", "N", "N", "T", "TE", "MS", "F", "F", "N", "E", "N", "T", "T3", "MS", "F", "F", "N", "N", "N", "TE", "T", "T3", "MS", "F", "X", "N", "T", "T", "T"] },
-      { id: "62115", name: "DI RUSSO", codes: ["F", "N", "E", "N", "N", "T", "MS", "F", "F", "N", "E", "E1", "N", "N", "N", "F", "F", "N", "X", "N", "E", "N", "T", "MS", "F", "E1", "N", "N", "N", "N"] }
-    ];
-    const SEED_BY_MES = { "2026-11": SEED_NOV, "2026-10": SEED_OCT, "2026-09": SEED_SEP };
+    // Ya no hay datos de personas en la página: todo viene de Firebase (solo registrados)
+    const SEED_BY_MES = {};
     // La semilla solo sirve como "inicial" si trae turnos (la de octubre es un molde vacío)
     function seedConTurnos(key) {
       const s = SEED_BY_MES[key];
       return Array.isArray(s) && s.some(p => (p.codes || []).some(Boolean));
     }
 
-    let people = SEED_BY_MES[FIRST_MES].map(p => ({ id: p.id, name: p.name, codes: p.codes.slice() }));
+    let people = [];
 
     // Snapshot de la programación INICIAL del mes: nunca se pisa,
     // ni al cargar un JSON nuevo ni al hacer ediciones. Sirve para poder
@@ -2849,16 +2652,8 @@
       applyColorOverrides();
     }
 
-    // Trae el JSON de un mes (null si no existe o falla)
-    async function fetchMes(key) {
-      try {
-        const r = await fetch(mesInfo(key).file + "?t=" + Date.now(), { cache: "no-store" });
-        if (!r.ok) return null;
-        const data = await r.json();
-        if (data && Array.isArray(data.people) && data.people.length) return data;
-      } catch (e) {}
-      return null;
-    }
+    // Los meses ya no están en la página (vienen de Firebase, solo para registrados)
+    async function fetchMes(key) { return null; }
 
     // Arma el encabezado de días según el mes (cantidad de días y día de la semana del 1)
     function renderDayHead() {
@@ -2937,7 +2732,7 @@
         loadNotesFromPeople(data.people);
         officialFeriados = normFeriados(data.feriados || []);
       } else {
-        people = normalizePeople(SEED_BY_MES[key]);
+        people = normalizePeople(SEED_BY_MES[key] || []);
       }
       setGroupsFor(key, data, people.length);
       applyFbColors(key);
@@ -3005,27 +2800,7 @@
     }
 
     // ---- Meses disponibles ----
-    const MES_DATA = {
-      "2026-11": {
-        mes: "2026-11",
-        codigos: ["14F", "DV", "E", "E1", "F", "FC", "LAO", "LIC", "MD", "MS", "N", "T", "T3", "TE", "X"],
-        colores: {"MD": "#F79646", "MS": "#FDA3FF", "T3": "#FFD966", "T": "#FFFFFF", "TE": "#B6DC8F", "N": "#018962", "E1": "#5DC8C0", "E": "#2253B4", "X": "#864BA0", "F": "#DF7272", "LAO": "#756F5C", "T1": "#F5F5DC", "14F": "#FF6B6B", "LIC": "#A9B4F5", "FC": "#ffe0b2", "DV": "#cccccc"},
-        feriados: [9, 11, 23],
-        grupos: GROUPS_BY_MES["2026-11"],
-        people: null // se rellena abajo con SEED_NOV
-      },
-      // Septiembre 2026 embebido (desde septiembre-2026.json)
-      "2026-09": {
-        mes: "2026-09",
-        codigos: ["14F", "BLOQ", "DV", "E", "F", "FC", "IN", "LAO", "MD", "MS", "N", "NP", "T", "T3", "TE", "TP", "X"],
-        colores: {"14F": "#334155", "BLOQ": "#8e2434", "DV": "#cccccc", "E": "#2E75B6", "F": "#FF6B6B", "FC": "#ffe0b2", "IN": "#fac090", "LAO": "#BF8F00", "MD": "#F79646", "MS": "#F8BBD0", "N": "#047857", "NP": "#cccccc", "T": "#FFFFFF", "T3": "#FFD966", "TE": "#92D050", "TP": "#cccccc", "X": "#7B1FA2"},
-        feriados: [],
-        people: null // se rellena abajo con SEED_SEP
-      }
-    };        // JSON publicado ya traído, por mes
-    // Vincular people de septiembre a la semilla (misma referencia)
-    MES_DATA["2026-09"].people = SEED_SEP;
-    MES_DATA["2026-11"].people = SEED_NOV;
+    const MES_DATA = {};        // meses ya traídos de Firebase
     let AVAILABLE_MESES = [];
 
     function mesKeyOf(y, m) { return y + "-" + String(m).padStart(2, "0"); }
@@ -3065,7 +2840,7 @@
       const results = await Promise.all(cands.map(k => fetchMes(k)));
       cands.forEach((k, i) => { if (results[i]) MES_DATA[k] = results[i]; });
       AVAILABLE_MESES = cands.filter(k => MES_DATA[k] || SEED_BY_MES[k]);
-      if (!AVAILABLE_MESES.length) AVAILABLE_MESES = [FIRST_MES];
+      if (!AVAILABLE_MESES.length) { const n = new Date(); AVAILABLE_MESES = [mesKeyOf(n.getFullYear(), n.getMonth() + 1)]; }
       let want = null;
       try { want = localStorage.getItem("cajerosMes"); } catch (e) {}
       if (!want || !AVAILABLE_MESES.includes(want)) {
@@ -3441,16 +3216,32 @@
       const msg = document.getElementById("yoLegajoMsg");
       const btn = document.getElementById("yoLegajoBtn");
       const id = String(inp.value || "").replace(/\D/g, "");
+      legajoElegido = null;
+      document.getElementById("yoLegajoConf").classList.remove("show");
       if (!id) { msg.textContent = "Escribí tu número de legajo."; return; }
       btn.disabled = true;
+      btn.textContent = "Buscando…";
       msg.textContent = "";
       const name = await nombreDeLegajo(id);
       btn.disabled = false;
+      btn.textContent = "Buscar";
       if (!name) { msg.textContent = "No encontramos el legajo " + id + ". Revisalo; si está bien, avisale al administrador."; return; }
-      if (!confirm("¿Sos " + name + " (" + id + ")?\n\nQueda guardado en este celular y después solo lo puede cambiar el administrador.")) return;
-      btn.disabled = true;
-      await elegirYo(id, name, false);
-      btn.disabled = false;
+      // La confirmación va dentro del cuadro (en iPhone las ventanitas del sistema a veces no aparecen)
+      legajoElegido = { id, name };
+      document.getElementById("yoLegajoPregunta").innerHTML = "¿Sos " + String(name).replace(/</g, "&lt;") + " (" + id + ")?" +
+        "<small>Queda guardado en este celular y después solo lo puede cambiar el administrador.</small>";
+      document.getElementById("yoLegajoConf").classList.add("show");
+    }
+    let legajoElegido = null;
+    async function confirmarLegajo() {
+      if (!legajoElegido) return;
+      const si = document.getElementById("yoLegajoSi");
+      si.disabled = true;
+      si.textContent = "Guardando…";
+      const ok = await elegirYo(legajoElegido.id, legajoElegido.name, false);
+      si.disabled = false;
+      si.textContent = "Sí, soy yo";
+      if (ok) { legajoElegido = null; document.getElementById("yoLegajoConf").classList.remove("show"); }
     }
     function openYo() {
       if ((miPersona() || soyExterno() || (miLegajo && !people.length)) && currentUser !== "ADMIN") return;
@@ -3462,11 +3253,20 @@
       document.getElementById("yoSearch").value = "";
       document.getElementById("yoLegajo").value = "";
       document.getElementById("yoLegajoMsg").textContent = "";
+      document.getElementById("yoLegajoConf").classList.remove("show");
+      legajoElegido = null;
       if (porLegajo) document.getElementById("yoNota").textContent = "";
       else renderYoList();
       yoOverlay.classList.add("open");
     }
     document.getElementById("yoLegajoBtn").addEventListener("click", buscarLegajo);
+    document.getElementById("yoLegajoSi").addEventListener("click", confirmarLegajo);
+    document.getElementById("yoLegajoNo").addEventListener("click", () => {
+      legajoElegido = null;
+      document.getElementById("yoLegajoConf").classList.remove("show");
+      document.getElementById("yoLegajo").value = "";
+      document.getElementById("yoLegajo").focus();
+    });
     document.getElementById("yoLegajo").addEventListener("keydown", e => { if (e.key === "Enter") buscarLegajo(); });
     document.getElementById("sinDatosYo").addEventListener("click", () => openYo());
     document.getElementById("yoSearch").addEventListener("input", renderYoList);
@@ -4753,6 +4553,7 @@
       if (!box) return;
       const vacio = !people.length;
       box.classList.toggle("show", vacio);
+      document.body.classList.toggle("sin-datos", vacio);
       if (!vacio) return;
       const sinNombre = !miLegajo && currentUser !== "ADMIN";
       document.getElementById("sinDatosTxt").textContent = sinNombre

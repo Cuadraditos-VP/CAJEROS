@@ -1764,7 +1764,7 @@
         <h3>Feriados del mes</h3>
         <button class="close-btn" id="closeFeriados" title="Cerrar">×</button>
       </div>
-      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 10px">Tocá un día para marcarlo o desmarcarlo como feriado. Domingo ya cuenta como feriado. El jueves usa su propia columna, salvo que también sea feriado.</p>
+      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 10px">Tocá un día para marcarlo o desmarcarlo como feriado. Domingo ya cuenta como feriado. El jueves usa su propia columna (también si es feriado), salvo que sea víspera de feriado: ahí cuenta como víspera.</p>
       <div class="fer-grid" id="feriadosGrid"></div>
       <div class="palette-actions">
         <button class="btn btn-clear" id="clearFeriados">Quitar todos</button>
@@ -2134,21 +2134,36 @@
       try { localStorage.setItem(feriadosKey(currentMes), JSON.stringify(feriados.map(d => d + 1))); } catch (e) {}
     }
     function isFeriado(di) { return feriados.indexOf(di) !== -1; }
-    // LU=0 ... DO=6. Si el día es feriado, manda la columna "domingo o feriado" (también un jueves feriado).
-    function dayKind(di) {
-      const wd = (MES.startWd + di) % 7;
-      if (isFeriado(di) || wd === 6) return "dom";
-      if (wd === 5) return "sab";
-      if (wd === 3) return "jue";
-      return "comun";
-    }
+    // LU=0 ... DO=6. Columna de horas extra del día (igual que en Control VP):
+    //  - domingo o feriado → "dom" · sábado → "sab"
+    //  - jueves → "jue"; jueves feriado → "juefer" (horario de jueves, T3 de feriado)
+    //  - jueves víspera de feriado → como víspera: "comun", o "dom" si además es feriado
+    function dayKind(di) { return dayKindOf(MES, feriados, di); }
     const OT_TABLE = {
-      T3: { comun: 2.5, sab: 3.75, dom: 5, jue: 2.5 },
-      TE: { comun: 2, sab: 2, dom: 2, jue: 2 },
-      E:  { comun: 2, sab: 2, dom: 2, jue: 4 },
-      E1: { comun: 2, sab: 2, dom: 2, jue: 2 },
-      X:  { comun: 3, sab: 3, dom: 3, jue: 5 }
+      T3: { comun: 2.5, sab: 3.75, dom: 5, jue: 2.5, juefer: 5 },
+      TE: { comun: 2, sab: 2, dom: 2, jue: 2, juefer: 2 },
+      E:  { comun: 2, sab: 2, dom: 2, jue: 2, juefer: 2 },
+      E1: { comun: 2, sab: 2, dom: 2, jue: 4, juefer: 4 },
+      X:  { comun: 3, sab: 3, dom: 3, jue: 5, juefer: 5 }
     };
+    /** ¿El día siguiente es feriado? (el último día del mes mira el 1 del mes siguiente) */
+    function esVisperaEnMes(info, fers, di) {
+      if (di + 1 < info.days) return fers.indexOf(di + 1) !== -1;
+      const y = info.m === 12 ? info.y + 1 : info.y;
+      const m = info.m === 12 ? 1 : info.m + 1;
+      try { return feriadosInMonth(mesKeyOf(y, m)).indexOf(0) !== -1; } catch (e) { return false; }
+    }
+    /** Texto del tipo de día para el detalle de horas extra */
+    function dayKindLabel(di) {
+      const wd = (MES.startWd + di) % 7;
+      const fer = isFeriado(di);
+      if (wd === 3) {
+        if (esVisperaEnMes(MES, feriados, di)) return fer ? "jueves feriado y víspera de feriado" : "jueves víspera de feriado";
+        return fer ? "jueves feriado" : "jueves";
+      }
+      const kind = dayKind(di);
+      return kind === "dom" ? "domingo o feriado" : kind === "sab" ? "sábado" : "día común";
+    }
     function fmtHoras(n) {
       const r = Math.round(n * 100) / 100;
       let s = String(r);
@@ -2157,9 +2172,14 @@
     }
     function dayKindOf(info, fers, di) {
       const wd = (info.startWd + di) % 7;
-      if (fers.indexOf(di) !== -1 || wd === 6) return "dom";
+      const fer = fers.indexOf(di) !== -1;
+      if (wd === 3) {
+        // Jueves: si es víspera de feriado manda la víspera (aunque también sea feriado)
+        if (esVisperaEnMes(info, fers, di)) return fer ? "dom" : "comun";
+        return fer ? "juefer" : "jue";
+      }
+      if (fer || wd === 6) return "dom";
       if (wd === 5) return "sab";
-      if (wd === 3) return "jue";
       return "comun";
     }
     function prevMesKey(key) {
@@ -4922,8 +4942,7 @@
       if (!el || shiftPersonIdx == null || shiftDayIdx == null) return;
       const code = (people[shiftPersonIdx].codes[shiftDayIdx] || "").trim().toUpperCase();
       const he = horasExtraDeTurno(code, shiftDayIdx);
-      const kind = dayKind(shiftDayIdx);
-      const kindTxt = kind === "dom" ? "domingo o feriado" : kind === "sab" ? "sábado" : kind === "jue" ? "jueves" : "día común";
+      const kindTxt = dayKindLabel(shiftDayIdx);
       el.textContent = he
         ? ("Horas extra de este turno: " + fmtHoras(he) + " · " + code + " · " + kindTxt)
         : ("Horas extra de este turno: 0 h" + (code ? " · " + code : ""));

@@ -1,8 +1,10 @@
 # Programación Cajeros — notas para Claude
 
 App web (PWA) de la programación mensual de turnos de los **cajeros**. Todo está en
-`index.html` (HTML + CSS + JS, sin build). Los turnos oficiales de cada mes vienen de
-`<mes>-<año>.json` (por ejemplo `noviembre-2026.json`); lo compartido en vivo va por Firebase.
+`index.html` (HTML + CSS + JS, sin build). Los turnos oficiales de cada mes están en Firebase
+(`turnos_cajeros`, un doc por mes) y solo los ven los registrados; lo compartido en vivo va por Firebase.
+Los `<mes>-<año>.json` y las semillas `SEED_*` del HTML son lo de antes (se sacan cuando el admin
+haya pasado los meses a Firebase): **nunca subir datos de empleados al repo** (es público).
 
 ## Regla de oro: hay una app gemela
 Esta app tiene una gemela casi idéntica para los **jefes**: `Cuadraditos-VP/progjefes`.
@@ -26,17 +28,24 @@ Esta app tiene una gemela casi idéntica para los **jefes**: `Cuadraditos-VP/pro
 node pruebas/correr.js
 ```
 Abre varios "celulares" con un Firebase falso compartido (`pruebas/firebase-falso.js` +
-`pruebas/backend.js`, que aplica la misma regla de permisos de `propios_*`) y recorre:
-Cambios (pedido con varias opciones, respuestas, acuerdo, avisos), fila propia publicada vs.
+`pruebas/backend.js`, que aplica las mismas reglas de escritura y de **lectura** que Firebase,
+con un mes de gente inventada — nunca datos reales en las pruebas) y recorre: registro por legajo y
+datos protegidos, Cambios (pedido con varias opciones, respuestas, acuerdo, avisos), fila propia publicada vs.
 filas ajenas privadas, descarte del admin con aviso, celda del franco ofrecido y que no haya
 errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala a la gemela).
 `pruebas/` es igual en las dos apps: mantenelo igual.
 
 ## Conceptos de la app
-- **¿Quién sos?**: cada celular elige su nombre una vez (`localStorage` `cajYo`) y se reserva
-  en `legajos_cajeros` (un celular por legajo). Solo el admin lo puede cambiar.
-- **Externos** (`EXTERNOS` en `index.html`, hoy solo "Valeria"): aparecen al final de "¿Quién sos?",
-  no reservan legajo, no tienen fila propia (no publican ni piden cambios) y no tienen permisos extra.
+- **Datos protegidos**: los turnos (nombres, legajos, licencias) están en Firebase y solo los leen
+  los celulares registrados y el admin (lo mismo `pedidos_*` y `propios_*`). Quien no se registró
+  ve un cartel y "¿Quién sos?". Registrado = su doc en `yo_cajeros` apunta a un legajo reservado a su
+  uid en `legajos_cajeros`, o a una invitación usada por su uid (`inv-<código>`).
+- **¿Quién sos?**: cada celular escribe su **legajo** una vez (`localStorage` `cajYo`); la app busca
+  el nombre en `padron_cajeros/{legajo}` (Firebase deja leer de a un legajo, no la lista) y lo
+  reserva en `legajos_cajeros` (un celular por legajo). Solo el admin lo puede cambiar (él ve la lista).
+- **Externos**: entran con un link de invitación del admin (Celulares → Invitar, colección
+  `invitados_cajeros`). No reservan legajo, no tienen fila propia (no publican ni piden cambios).
+  `EXTERNOS` en `index.html` quedó vacío (Valeria pasó a invitación).
 - **Fila propia vs. ajena**: cualquiera puede cambiar cualquier fila en su celular, pero solo
   lo de **su propia fila** se publica para todos (colección `propios_cajeros`, doc
   `<mes>_<legajo>`, días como `d0`, `d1`…). Lo de filas ajenas queda solo en ese celular.
@@ -55,8 +64,9 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
 - Colores de celdas: ámbar = cambio solo en este celular; azul = publicado.
 
 ## Diferencias con la gemela (jefes)
-- En cajeros el admin **no** publica turnos: solo colores/feriados/letras (colección
-  `cajeros`). Los turnos oficiales se actualizan subiendo el JSON del mes a GitHub.
+- En cajeros el admin publica el mes entero subiendo su archivo con ↑ JSON (va a `turnos_cajeros`
+  y al padrón); los colores/feriados/letras van aparte con ⬆ Publicar (colección `cajeros`).
+  Cada mes nuevo: Guillermo pasa el PDF, se arma el JSON y él lo sube con ↑ JSON (no a GitHub).
 - Colección de CJ: `cj_cajeros` (en jefes es `cj`). Hay `server.js` para correr la app en local.
 
 ## Detalles técnicos útiles

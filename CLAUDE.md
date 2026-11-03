@@ -81,12 +81,13 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   y al padrón); los colores/feriados/letras van aparte con ⬆ Publicar (colección `cajeros`).
   Cada mes nuevo: Guillermo pasa el PDF, se arma el JSON y él lo sube con ↑ JSON (no a GitHub).
 - Colección de CJ: `cj_cajeros` (en jefes es `cj`). Hay `server.js` para correr la app en local.
-- **Control VP** (`Cuadraditos-VP/ControlVP-completo`, la app de cabina/jefes) lee de acá `turnos_cajeros`,
+- **Control VP**: dos apps leen de acá: `Cuadraditos-VP/Control-VP` (la de jefes en el celular, a la que apunta
+  el link de la invitación) y `Cuadraditos-VP/ControlVP-completo` (la de cabina en la PC). Las dos leen `turnos_cajeros`,
   `propios_cajeros` y los feriados. Cada dispositivo se autoriza una vez con una invitación que el admin manda
   desde Celulares → "Invitar a Control VP" (`invitados_cajeros` con `app: "controlvp"`, link a Control VP con
   `?inv=`; en iPhone se escribe el código con el botón 🔗). Control VP entra por REST como anónimo propio y se
   registra en `yo_cajeros` como `inv-<código>`. Si se cambia cómo se guardan los turnos o los propios, avisar
-  que también hay que tocar Control VP.
+  que también hay que tocar las dos Control VP.
 
 ## Detalles técnicos útiles
 - Firebase: Firestore + Auth (anónimo para los celulares, Google para el admin). Admin =

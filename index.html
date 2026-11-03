@@ -5740,7 +5740,7 @@
     }
     function linkInvitacion(code) { return location.origin + location.pathname + "?inv=" + code; }
     // Control VP (la app de cabina/jefes) lee la programación de Cajeros con su propia invitación
-    const CONTROL_VP_URL = "https://cuadraditos-vp.github.io/ControlVP-completo/";
+    const CONTROL_VP_URL = "https://cuadraditos-vp.github.io/Control-VP/"; // app de jefes (celular); la de cabina usa el mismo código con 🔗
     function compartirInvitacionCvp(nombre, code) {
       const link = CONTROL_VP_URL + "?inv=" + code;
       const texto = "Hola " + nombre + ", con este link Control VP va a recibir la programación de cajeros:\n" + link +

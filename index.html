@@ -2836,6 +2836,9 @@
         sel.appendChild(o);
       });
       sel.style.display = AVAILABLE_MESES.length > 1 ? "" : "none";
+      // Con el selector a la vista no hace falta repetir el mes en el título
+      const h1 = document.querySelector("header h1");
+      if (h1) h1.style.display = AVAILABLE_MESES.length > 1 ? "none" : "";
       sel.value = currentMes;
     }
     document.getElementById("monthSelect").addEventListener("change", (e) => {

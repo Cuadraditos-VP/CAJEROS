@@ -4697,6 +4697,8 @@
       actualizarSinDatos();
       updatePedidosBar();
       abrirAlmanaqueInicial();
+      // Con los turnos ya cargados, se mandan (o se vuelven a mandar) los cambios a CJ
+      cambiados.forEach(k => scheduleCjSync(k));
       if (currentUser === "ADMIN") migrarLegado();
     }
     // Cartel cuando no hay turnos para mostrar (sin registrarse, cargando o sin meses)
@@ -4834,6 +4836,8 @@
       try { em = JSON.parse(localStorage.getItem(editsKey(key)) || "{}"); } catch (e) { em = {}; }
       const times = loadEditTimes(key);
       const list = officialPeopleFor(key);
+      // Todavía no llegaron los turnos de ese mes: no mandar (si no, se manda vacío y se borra lo de CJ)
+      if (!list.length) return;
       const edits = {};
       Object.keys(em).forEach(k => {
         const [pi, di] = k.split(":").map(Number);

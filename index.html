@@ -1778,6 +1778,7 @@
       </div>
       <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 6px">Qué nombre eligió cada celular. "Liberar" hace que ese celular vuelva a preguntar "¿Quién sos?" la próxima vez que abra la app.</p>
       <button type="button" class="ped-act" id="btnInvitar" style="width:100%;margin:2px 0 6px">＋ Invitar a alguien externo</button>
+      <button type="button" class="ped-act sec" id="btnInvitarCvp" style="width:100%;margin:0 0 6px">＋ Invitar a Control VP (jefes)</button>
       <div id="invitacionesList"></div>
       <div id="celularesList"></div>
     </div>
@@ -5729,14 +5730,28 @@
       showShareToast("Listo" + (d.name ? ", " + d.name : "") + ": ya podés ver la programación.");
     }
     // Admin: crear una invitación y devolver su código
-    async function crearInvitacion(nombre) {
+    async function crearInvitacion(nombre, app) {
       const abc = "abcdefghijkmnpqrstuvwxyz23456789";
       const code = Array.from(crypto.getRandomValues(new Uint8Array(14)), b => abc[b % abc.length]).join("");
-      await fbDb.collection(INV_COLLECTION).doc(code).set({ name: nombre, creado: Date.now() });
+      const data = { name: nombre, creado: Date.now() };
+      if (app) data.app = app;
+      await fbDb.collection(INV_COLLECTION).doc(code).set(data);
       return code;
     }
     function linkInvitacion(code) { return location.origin + location.pathname + "?inv=" + code; }
+    // Control VP (la app de cabina/jefes) lee la programación de Cajeros con su propia invitación
+    const CONTROL_VP_URL = "https://cuadraditos-vp.github.io/ControlVP-completo/";
+    function compartirInvitacionCvp(nombre, code) {
+      const link = CONTROL_VP_URL + "?inv=" + code;
+      const texto = "Hola " + nombre + ", con este link Control VP va a recibir la programación de cajeros: " + link +
+        "\n\nSi tenés iPhone: abrí el link en Safari, tocá Compartir → \"Agregar a inicio\" y abrí la app desde el ícono. " +
+        "Ahí tocá 🔗 y escribí este código: " + code;
+      if (navigator.share) { navigator.share({ title: "Control VP", text: texto }).catch(() => {}); return; }
+      if (navigator.clipboard) navigator.clipboard.writeText(texto).then(() => showShareToast("Link copiado: pegalo en WhatsApp")).catch(() => prompt("Copiá el link:", link));
+      else prompt("Copiá el link:", link);
+    }
     function compartirInvitacion(nombre, code) {
+      if (invitacionesDocs[code] && invitacionesDocs[code].app === "controlvp") { compartirInvitacionCvp(nombre, code); return; }
       const link = linkInvitacion(code);
       const texto = "Hola " + nombre + ", con este link vas a poder ver la programación de cajeros: " + link +
         "\n\nSi tenés iPhone: abrí el link en Safari, tocá Compartir → \"Agregar a inicio\" y abrí la app desde el ícono. " +
@@ -5766,7 +5781,8 @@
           const d = invitacionesDocs[k];
           const row = document.createElement("div");
           row.className = "acu-row";
-          row.innerHTML = '<div class="acu-top"><span>' + String(d.name || "").replace(/</g, "&lt;") + ' · invitación sin usar</span></div>';
+          row.innerHTML = '<div class="acu-top"><span>' + String(d.name || "").replace(/</g, "&lt;") +
+            (d.app === "controlvp" ? ' · Control VP' : '') + ' · invitación sin usar</span></div>';
           const btns = document.createElement("span");
           btns.style.cssText = "display:flex;gap:6px";
           const bL = document.createElement("button");
@@ -5784,13 +5800,15 @@
           list.appendChild(row);
         });
     }
-    document.getElementById("btnInvitar").addEventListener("click", async () => {
+    async function invitar(app) {
       if (currentUser !== "ADMIN") return;
-      const nombre = (prompt("¿A quién querés invitar? (nombre)") || "").trim();
+      const nombre = (prompt(app === "controlvp"
+        ? "¿Para quién es Control VP? (nombre del jefe o de la PC de cabina)"
+        : "¿A quién querés invitar? (nombre)") || "").trim();
       if (!nombre) return;
       try {
-        const code = await crearInvitacion(nombre);
-        invitacionesDocs[code] = { name: nombre, creado: Date.now() };
+        const code = await crearInvitacion(nombre, app);
+        invitacionesDocs[code] = Object.assign({ name: nombre, creado: Date.now() }, app ? { app } : {});
         renderInvitaciones();
         compartirInvitacion(nombre, code);
       } catch (err) {
@@ -5798,7 +5816,9 @@
           ? "Firebase no deja crear la invitación (faltan las reglas de " + INV_COLLECTION + ")."
           : "No se pudo crear la invitación. Revisá la conexión.");
       }
-    });
+    }
+    document.getElementById("btnInvitar").addEventListener("click", () => invitar(""));
+    document.getElementById("btnInvitarCvp").addEventListener("click", () => invitar("controlvp"));
 
     function showShareToast(msg) {
       let t = document.getElementById("shareToast");

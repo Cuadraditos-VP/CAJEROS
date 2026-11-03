@@ -5743,9 +5743,9 @@
     const CONTROL_VP_URL = "https://cuadraditos-vp.github.io/ControlVP-completo/";
     function compartirInvitacionCvp(nombre, code) {
       const link = CONTROL_VP_URL + "?inv=" + code;
-      const texto = "Hola " + nombre + ", con este link Control VP va a recibir la programación de cajeros: " + link +
-        "\n\nSi tenés iPhone: abrí el link en Safari, tocá Compartir → \"Agregar a inicio\" y abrí la app desde el ícono. " +
-        "Ahí tocá 🔗 y escribí este código: " + code;
+      const texto = "Hola " + nombre + ", con este link Control VP va a recibir la programación de cajeros:\n" + link +
+        "\n\nSi usás la app instalada (o el link se abre en el navegador), abrí Control VP, tocá 🔗 y pegá este código " +
+        "(o este mensaje entero):\n\nCódigo: " + code;
       if (navigator.share) { navigator.share({ title: "Control VP", text: texto }).catch(() => {}); return; }
       if (navigator.clipboard) navigator.clipboard.writeText(texto).then(() => showShareToast("Link copiado: pegalo en WhatsApp")).catch(() => prompt("Copiá el link:", link));
       else prompt("Copiá el link:", link);

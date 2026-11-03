@@ -65,7 +65,8 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
 - **Avisos** ("Novedades de tus cambios"): interesados en tu pedido, confirmación, pedido
   cerrado con otro, admin lo pasó a lo oficial, admin descartó tu cambio.
 - **CJ** (vista del admin): los cambios que manda cada celular (colección `cj_cajeros`),
-  incluidos los de filas ajenas.
+  incluidos los de filas ajenas. También suma lo publicado en `propios_*` (aunque ese celular no haya
+  mandado nada). Un celular no manda a CJ hasta tener los turnos del mes (si no, lo borraría).
 - Al abrir, la app muestra el inicio de la grilla principal (ni el grupo propio ni el almanaque:
   `ABRIR_ALMANAQUE_AL_INICIO = false`).
   Tras la recarga automática de 20 min vuelve a donde estaba (`recargaAutomatica` / `volverAPosicion`).

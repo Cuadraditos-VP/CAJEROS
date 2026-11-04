@@ -79,6 +79,8 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
 - Copia de los meses en el celular (cajeros `cajTurnos:<mes>`, jefes `ctFb:<mes>`) para abrir al
   instante y sin internet; solo en registrados/admin y se borra si el admin libera el celular.
 - Colores de celdas: ámbar = cambio solo en este celular; azul = publicado.
+- **Licencia (LIC)**: no lleva texto (solo el color; el selector de turnos sí dice LIC). Los días de
+  licencia no se pueden cambiar ni pedir (`esLicencia` en `puedeEditar`): solo el admin los puede corregir.
 
 ## Diferencias con la gemela (jefes)
 - En cajeros el admin publica el mes entero subiendo su archivo con ↑ JSON (va a `turnos_cajeros`

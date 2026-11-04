@@ -1639,7 +1639,7 @@
         <button type="button" id="btnImportJson" class="json-btn admin-only" title="Importar JSON">↑ JSON</button>
         <button type="button" id="btnMiAlmanaque" class="mi-btn" title="Mi almanaque" style="display:none"></button>
         <button type="button" id="btnPedidos" class="json-btn fb-only ped-btn" title="Pedidos de cambio de turno">Cambios</button>
-        <button type="button" id="btnPublish" class="json-btn admin-only fb-only publish-btn" title="Publicar colores y feriados para todos (los turnos nunca se publican desde acá)">⬆ Publicar</button>
+        <button type="button" id="btnPublish" class="json-btn admin-only fb-only publish-btn" title="Publicar para todos: tus cambios de turnos, colores y feriados">⬆ Publicar</button>
         <input id="importJsonFile" type="file" accept="application/json,.json" hidden>
       </div>
     </header>
@@ -1802,7 +1802,7 @@
         <h3>Cambios acordados</h3>
         <button class="close-btn" id="closeAcuerdos" title="Cerrar">×</button>
       </div>
-      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 6px">Cambios que los cajeros cerraron entre ellos. Ya los ven todos (cada uno lo tiene en su fila). Para que queden en lo oficial, cargalos en el archivo del mes, subilo con ↑ JSON y tocá "Ya lo pasé".</p>
+      <p style="font-size:0.75rem;color:#64748b;margin:-6px 0 6px">Cambios que los cajeros cerraron entre ellos. Ya los ven todos (cada uno lo tiene en su fila). Para que queden en lo oficial, cambialos en la grilla, tocá ⬆ Publicar y después "Ya lo pasé".</p>
       <div id="acuerdosList"></div>
     </div>
   </div>
@@ -3776,13 +3776,15 @@
     // Lo ya visto se guarda en este celular.
     const AVISOS_KEY = "cajAvisos:";
     let avisosVistos = null, avisosLeg = null;
+    // De quién son los avisos de este celular: su legajo, o "admin" para el administrador
+    function avisosClave() { return miLegajo || (currentUser === "ADMIN" ? "admin" : ""); }
     function cargarVistos() {
-      if (avisosLeg === miLegajo) return;
-      avisosLeg = miLegajo; avisosVistos = null;
-      try { const s = localStorage.getItem(AVISOS_KEY + miLegajo); if (s) avisosVistos = JSON.parse(s); } catch (e) {}
+      if (avisosLeg === avisosClave()) return;
+      avisosLeg = avisosClave(); avisosVistos = null;
+      try { const s = localStorage.getItem(AVISOS_KEY + avisosLeg); if (s) avisosVistos = JSON.parse(s); } catch (e) {}
     }
     function guardarVistos() {
-      try { localStorage.setItem(AVISOS_KEY + miLegajo, JSON.stringify(avisosVistos)); } catch (e) {}
+      try { localStorage.setItem(AVISOS_KEY + avisosClave(), JSON.stringify(avisosVistos)); } catch (e) {}
     }
     function fechaAviso(mes, dia) {
       return mes === currentMes && DAY_LABELS[dia - 1] ? fechaTxt(dia - 1) : dia + "/" + Number(String(mes).slice(5));
@@ -3827,7 +3829,36 @@
             txt: "El admin descartó tu cambio del " + fechaAviso(d.mes, di + 1) + " (" + (ds.c || "vacío") + "). Vuelve a " + (ofi || "vacío") + "." });
         });
       });
+      if (currentUser === "ADMIN") avisosAdmin().forEach(a => out.push(a));
       return out.sort((a, b) => a.t - b.t);
+    }
+    // Turnos que publicó el admin (changedAt del mes: "legajo:día" → cuándo)
+    function changedAtDe(mes) {
+      const fb = typeof loadFbCache === "function" ? loadFbCache(mes) : null;
+      return (fb && fb.changedAt) || (MES_DATA[mes] && MES_DATA[mes].changedAt) || {};
+    }
+    // Para el admin: alguien volvió a cambiar en su fila un turno que el admin había publicado
+    function avisosAdmin() {
+      const out = [];
+      Object.keys(propDocs).forEach(k => {
+        const d = propDocs[k];
+        if (!d || !d.edits || !d.id || !d.mes) return;
+        const ca = changedAtDe(d.mes);
+        const ofi = officialPeopleFor(d.mes).find(x => String(x.id) === String(d.id));
+        Object.keys(d.edits).forEach(dk => {
+          const di = Number(dk.slice(1)), tf = Number(ca[d.id + ":" + di]) || 0;
+          if (!tf) return;
+          const te = Number((d.t || {})[dk]) || Number(d.updated) || 0;
+          const c = String(d.edits[dk] || ""), oc = ofi ? String((ofi.codes || [])[di] || "") : "";
+          if (te <= tf || c === oc) return;
+          const per = people.find(x => String(x.id) === String(d.id));
+          const nom = (per && per.name) || d.name || d.id;
+          out.push({ k: "a:" + k + ":" + dk + ":" + te, tipo: "a", t: te,
+            txt: "<b>" + escH(nom) + "</b> cambió en su fila el " + fechaAviso(d.mes, di + 1) + ": puso " + (escH(c) || "vacío") +
+              " donde vos habías publicado " + (escH(oc) || "vacío") + ". Si no corresponde, tocá esa celda en A y descartalo." });
+        });
+      });
+      return out;
     }
     // El que pidió abrió ese pedido: ya vio a los interesados
     function vistosDePedido(docId) {
@@ -3841,7 +3872,7 @@
     let avisosMostrados = [];
     function revisarAvisos() {
       const bp = document.getElementById("btnPedidos");
-      if (!miLegajo) { delete bp.dataset.n; return; }
+      if (!avisosClave()) { delete bp.dataset.n; return; }
       cargarVistos();
       const todos = calcAvisos();
       if (!avisosVistos) {
@@ -4162,7 +4193,7 @@
     function alcanceDe(pi) {
       const me = miPersona();
       if (me && me.pi === pi) return { cls: "pub", txt: "Tu fila: este cambio lo ven todos." };
-      if (currentUser === "ADMIN") return { cls: "priv", txt: "Solo en tu celular (para preparar el JSON)." };
+      if (currentUser === "ADMIN") return { cls: "pub", txt: "Lo ven todos cuando toques ⬆ Publicar." };
       if (soyExterno()) return { cls: "priv", txt: "Solo en tu celular: este cambio lo ves solo vos." };
       if (!me) return { cls: "priv", txt: "Solo en tu celular. Elegí quién sos (en Cambios) para que los cambios de tu fila los vean todos." };
       return { cls: "priv", txt: "Fila de otro: este cambio lo ves solo vos." };
@@ -4986,7 +5017,7 @@
 
     // Arma la vista CJ del mes actual: versión oficial + el último cambio de algún cajero en cada celda
     function rebuildCj() {
-      const changedAt = {};
+      const changedAt = changedAtDe(currentMes);
       const latest = {};
       Object.values(cjDocs).forEach(doc => {
         if (!doc || doc.mes !== currentMes || !doc.edits) return;
@@ -5159,7 +5190,40 @@
       const fb = (officialFeriados || []).slice().sort((a, b) => a - b).join(",");
       return fa !== fb;
     }
-    function pendingCount() { return pendingColors().length + (feriadosPending() ? 1 : 0); }
+    // Turnos que cambió el admin y todavía no publicó (programación oficial + sus cambios)
+    function turnosAPublicar() {
+      const codes = people.map((p, i) => (ORIGINAL_CODES[i] || []).slice());
+      const cambiados = [];
+      Object.keys(editsMap).forEach(k => {
+        const [pi, di] = k.split(":").map(Number);
+        if (!codes[pi] || di >= codes[pi].length) return;
+        const c = editsMap[k] || "";
+        if (c === (codes[pi][di] || "")) return;
+        codes[pi][di] = c;
+        cambiados.push(people[pi].id + ":" + di);
+      });
+      return { codes, cambiados };
+    }
+    // Celdas que el admin va a publicar donde el dueño de la fila publicó otra cosa
+    function choquesConPropios(tp) {
+      return tp.cambiados.map(k => {
+        const cut = k.lastIndexOf(":"), id = k.slice(0, cut), di = Number(k.slice(cut + 1));
+        const pi = people.findIndex(p => String(p.id) === id);
+        const pub = propCode(currentMes, id, di);
+        return pi < 0 || pub == null || pub === ((tp.codes[pi] || [])[di] || "") ? null
+          : { id, di, name: people[pi].name, pub, nuevo: (tp.codes[pi] || [])[di] || "" };
+      }).filter(Boolean);
+    }
+    function textoChoques(ch) {
+      if (!ch.length) return "";
+      return "\n\nEn " + (ch.length === 1 ? "1 celda" : ch.length + " celdas") + " vas a reemplazar lo que publicó esa persona en su fila:\n" +
+        ch.map(x => "• " + x.name + " el " + (x.di + 1) + ": " + (x.pub || "vacío") + " → " + (x.nuevo || "vacío")).join("\n") +
+        "\nA cada uno le llega un aviso.";
+    }
+    function pendingCount() {
+      const turnos = currentUser === "ADMIN" && FB_MESES[currentMes] ? turnosAPublicar().cambiados.length : 0;
+      return pendingColors().length + (feriadosPending() ? 1 : 0) + turnos;
+    }
     function updatePublishBtn() {
       const btn = document.getElementById("btnPublish");
       if (!btn || btn.disabled || !fbStarted) return;
@@ -5172,18 +5236,35 @@
       if (!fbReady || currentUser !== "ADMIN") return;
       const cols = pendingColors();
       const ferChange = feriadosPending();
+      // Tus cambios de turnos pasan a la programación oficial (solo si el mes ya está en Firebase)
+      const tp = FB_MESES[currentMes] ? turnosAPublicar() : { codes: [], cambiados: [] };
+      const nt = tp.cambiados.length;
+      const choques = choquesConPropios(tp);
       const partes = [];
+      if (nt) partes.push("• " + nt + (nt === 1 ? " turno cambiado" : " turnos cambiados") + " (pasan a lo oficial: los ven todos y Control VP)");
       if (cols.length) partes.push("• Colores: " + cols.join(", "));
       if (ferChange) partes.push("• Feriados de " + MES.nombre.toLowerCase() + ": " + (feriados.length ? feriados.map(x => x + 1).join(", ") : "ninguno"));
-      const msg = partes.length
-        ? "¿Publicar para todos?\n\n" + partes.join("\n") + "\n\nLos turnos no se publican: nadie ve tus cambios de turnos."
-        : "No hay colores ni feriados distintos a los publicados. ¿Publicar igual?\n\nLos turnos no se publican.";
+      const msg = (partes.length
+        ? "¿Publicar para todos?\n\n" + partes.join("\n")
+        : "No hay turnos, colores ni feriados distintos a los publicados. ¿Publicar igual?") + textoChoques(choques);
       if (!confirm(msg)) return;
       const btn = document.getElementById("btnPublish");
       btn.disabled = true;
       btn.textContent = "Publicando…";
       const data = { mes: currentMes, version: Date.now(), colores: Object.assign({}, colorMap), letras: Object.assign({}, textMap), feriados: feriados.map(d => d + 1) };
       try {
+        if (nt) {
+          const base = MES_DATA[currentMes] || {};
+          const crudos = Array.isArray(base.people) ? base.people : [];
+          const changedAt = Object.assign({}, base.changedAt || {});
+          tp.cambiados.forEach(k => { changedAt[k] = data.version; });
+          await publicarMes(Object.assign({}, base, {
+            mes: currentMes, changedAt,
+            people: people.map((p, i) => Object.assign({}, crudos.find(x => String(x.id) === String(p.id)) || {},
+              { id: p.id, name: p.name, codes: tp.codes[i] }))
+          }));
+          choques.forEach(x => descartarPropio(currentMes, x.id, x.di));
+        }
         await fbDb.collection(FB_COLLECTION).doc(currentMes).set(data);
         colorOverrides = {};
         saveColorOverrides();

@@ -1317,6 +1317,20 @@
     #colorCodes .shift-option { outline: 1px solid rgba(0,0,0,.12); outline-offset: -1px; }
     #colorCodes .shift-option.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.4); }
     body:not(.fb-on) .fb-only { display: none !important; }
+    /* Celular (pantalla táctil): las herramientas del admin van en una ventana (botón ☰).
+       En la PC siguen en la barra de arriba. */
+    .adm-menu-btn { display: none; font-size: 0.95rem; padding: 4px 10px; }
+    body.menu-admin-celu.is-admin .adm-menu-btn { display: inline-flex; align-items: center; }
+    .adm-menu-btn.pending { background: #dc2626; }
+    .adm-menu-modal { max-width: 320px; }
+    #adminMenuList { display: flex; flex-direction: column; gap: 8px; }
+    #adminMenuList button {
+      width: 100%; height: auto; margin: 0; padding: 12px; border-radius: 10px;
+      font-size: 0.92rem; font-weight: 700; justify-content: center; gap: 8px;
+    }
+    #adminMenuList #btnFeriados { font-size: 0; }
+    #adminMenuList #btnFeriados::after { content: "Feriados"; font-size: 0.92rem; }
+    #adminMenuList #btnColores::after { content: "Colores"; }
     .publish-btn { background: #16a34a; }
     .publish-btn.pending { background: #dc2626; }
     .publish-btn:disabled { opacity: 0.6; cursor: wait; }
@@ -1645,6 +1659,7 @@
         <button type="button" id="btnMiAlmanaque" class="mi-btn" title="Mi almanaque" style="display:none"></button>
         <button type="button" id="btnPedidos" class="json-btn fb-only ped-btn" title="Pedidos de cambio de turno">Cambios</button>
         <button type="button" id="btnPublish" class="json-btn admin-only fb-only publish-btn" title="Publicar para todos: tus cambios de turnos, colores y feriados">⬆ Publicar</button>
+        <button type="button" id="btnAdminMenu" class="json-btn admin-only adm-menu-btn" title="Herramientas de admin" aria-label="Herramientas de admin">☰</button>
         <input id="importJsonFile" type="file" accept="application/json,.json" hidden>
       </div>
     </header>
@@ -1863,6 +1878,15 @@
       </div>
       <input id="yoSearch" type="search" placeholder="Buscar apellido o legajo" autocomplete="off">
       <div id="yoList"></div>
+    </div>
+  </div>
+  <div class="palette-overlay" id="adminMenuOverlay">
+    <div class="palette-modal adm-menu-modal">
+      <div class="palette-header">
+        <h3>Admin</h3>
+        <button class="close-btn" id="closeAdminMenu" title="Cerrar">×</button>
+      </div>
+      <div id="adminMenuList"></div>
     </div>
   </div>
   <div class="palette-overlay" id="feriadosOverlay">
@@ -5257,6 +5281,8 @@
       const n = pendingCount();
       btn.textContent = n ? "⬆ Publicar (" + n + ")" : "⬆ Publicar";
       btn.classList.toggle("pending", n > 0);
+      const mb = document.getElementById("btnAdminMenu");
+      if (mb) { mb.classList.toggle("pending", n > 0); mb.textContent = n ? "☰ " + n : "☰"; }
     }
 
     document.getElementById("btnPublish").addEventListener("click", async () => {
@@ -6313,6 +6339,39 @@
       document.getElementById("feriadosOverlay").classList.add("open");
     }
     document.getElementById("btnFeriados").addEventListener("click", openFeriados);
+
+    // Celular: Fer, Colores, JSON y Publicar se mudan a la ventana del botón ☰ (en la PC quedan arriba).
+    (function menuAdminCelular() {
+      const IDS = ["btnFeriados", "btnColores", "btnExportJson", "btnCopyJson", "btnImportJson", "btnPublish"];
+      const QUEDA_ABIERTO = ["btnCopyJson", "btnPublish"]; // para ver "✓ Copiado" / "Publicando…"
+      const overlay = document.getElementById("adminMenuOverlay");
+      const lista = document.getElementById("adminMenuList");
+      const barra = document.querySelector("header .topbar");
+      const ancla = document.getElementById("btnMiAlmanaque");
+      const mq = window.matchMedia("(hover: none) and (pointer: coarse)");
+      const cerrar = () => overlay.classList.remove("open");
+      function acomodar() {
+        const celu = mq.matches;
+        document.body.classList.toggle("menu-admin-celu", celu);
+        IDS.forEach(id => {
+          const b = document.getElementById(id);
+          if (!b) return;
+          if (celu) lista.appendChild(b);
+          else if (id === "btnPublish") barra.insertBefore(b, document.getElementById("btnAdminMenu"));
+          else barra.insertBefore(b, ancla);
+        });
+        if (!celu) cerrar();
+      }
+      acomodar();
+      if (mq.addEventListener) mq.addEventListener("change", acomodar);
+      document.getElementById("btnAdminMenu").addEventListener("click", () => overlay.classList.add("open"));
+      document.getElementById("closeAdminMenu").addEventListener("click", cerrar);
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) return cerrar();
+        const b = e.target.closest("button");
+        if (b && IDS.includes(b.id) && !QUEDA_ABIERTO.includes(b.id)) cerrar();
+      });
+    })();
     document.getElementById("closeFeriados").addEventListener("click", () => {
       document.getElementById("feriadosOverlay").classList.remove("open");
     });

@@ -306,7 +306,7 @@
       border-color: #2563eb;
       box-shadow: 0 0 0 2px rgba(37,99,235,0.4);
     }
-    /* Turno en edición: el CASILLERO DEL ALMANAQUE INDIVIDUAL titila hasta "Listo" */
+    /* Turno en edición: el CASILLERO DEL ALMANAQUE INDIVIDUAL titila mientras la ventana está abierta */
     @keyframes pendingShiftBlink {
       0%, 100% {
         outline: 4px solid rgba(37,99,235,1);
@@ -5592,7 +5592,8 @@
       saveEdit(shiftPersonIdx, shiftDayIdx, code);
       saveShiftComment();
       refreshAfterEdit();
-      // La ventana permanece abierta. Solo "Listo" la cierra.
+      // Igual que en jefes: al elegir, la ventana se cierra sola.
+      closeShiftPicker();
     }
 
     document.getElementById("clearShift").addEventListener("click", () => {
@@ -5600,7 +5601,8 @@
       saveEdit(shiftPersonIdx, shiftDayIdx, "");
       saveShiftComment();
       refreshAfterEdit();
-      // La ventana permanece abierta. Solo "Listo" la cierra.
+      // Igual que en jefes: al elegir, la ventana se cierra sola.
+      closeShiftPicker();
     });
 
     document.getElementById("restoreShift").addEventListener("click", () => {
@@ -5611,7 +5613,8 @@
       if (cEl) cEl.value = sinNotaCambio(cEl.value);
       saveShiftComment();
       refreshAfterEdit();
-      // La ventana permanece abierta. Solo "Listo" la cierra.
+      // Igual que en jefes: al elegir, la ventana se cierra sola.
+      closeShiftPicker();
     });
 
     document.getElementById("closeShift").addEventListener("click", (e) => {
@@ -5647,7 +5650,7 @@
 
     function closeShiftPicker() {
       shiftOverlay.classList.remove("open");
-      // Al cerrar con "Listo", quitamos el titileo del casillero del almanaque.
+      // Al cerrar, quitamos el titileo del casillero del almanaque.
       document.querySelectorAll(".cal-day.pending-shift, .cal-day-h.pending-shift").forEach(el => {
         el.classList.remove("pending-shift");
       });

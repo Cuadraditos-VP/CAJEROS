@@ -370,6 +370,7 @@
       display: flex;
       gap: 8px;
     }
+    #cjInfoOverlay .palette-actions { flex-wrap: wrap; }
     .btn {
       flex: 1;
       padding: 9px 12px;
@@ -1838,6 +1839,7 @@
       <div id="cjInfoBody"></div>
       <div class="palette-actions">
         <button class="btn btn-clear" id="cjInfoDescartar">Descartar</button>
+        <button class="btn btn-done" id="cjInfoOficial">Pasar a lo oficial</button>
         <button class="btn btn-done" id="cjInfoCerrar">Cerrar</button>
       </div>
     </div>
@@ -5218,6 +5220,7 @@
       }
       document.getElementById("cjInfoBody").innerHTML = html;
       document.getElementById("cjInfoDescartar").style.display = puedeDescartar ? "" : "none";
+      document.getElementById("cjInfoOficial").style.display = enCj !== orig && FB_MESES[currentMes] ? "" : "none";
       document.getElementById("cjInfoOverlay").classList.add("open");
     }
     function cerrarInfoCj() { document.getElementById("cjInfoOverlay").classList.remove("open"); }
@@ -5253,6 +5256,43 @@
       const fb = (officialFeriados || []).slice().sort((a, b) => a - b).join(",");
       return fa !== fb;
     }
+    // Desde CJ: pasa a lo oficial solo esa celda (lo ven todos). No toca los otros cambios del admin.
+    document.getElementById("cjInfoOficial").addEventListener("click", () => {
+      if (cjInfoPi != null) pasarCjAOficial(cjInfoPi, cjInfoDi);
+    });
+    async function pasarCjAOficial(pi, di) {
+      const p = people[pi];
+      if (!p || currentUser !== "ADMIN" || !fbReady || !FB_MESES[currentMes]) return;
+      const code = ((CJ_CODES[pi] || [])[di]) || "";
+      const orig = ((ORIGINAL_CODES[pi] || [])[di]) || "";
+      if (code === orig) return;
+      const codes = people.map((x, i) => (ORIGINAL_CODES[i] || []).slice());
+      codes[pi][di] = code;
+      const key = p.id + ":" + di;
+      const tp = { codes, cambiados: [key] };
+      const choques = choquesConPropios(tp);
+      if (!confirm("¿Pasar a lo oficial?\n\n" + p.name + " · día " + (di + 1) + ": " + (orig || "vacío") + " → " + (code || "vacío") +
+        "\n\nLo ven todos y Control VP." + textoChoques(choques))) return;
+      cerrarInfoCj();
+      const version = Date.now();
+      try {
+        const base = MES_DATA[currentMes] || {};
+        const crudos = Array.isArray(base.people) ? base.people : [];
+        const changedAt = Object.assign({}, base.changedAt || {}, { [key]: version });
+        await publicarMes(Object.assign({}, base, {
+          mes: currentMes, changedAt,
+          people: people.map((x, i) => Object.assign({}, crudos.find(y => String(y.id) === String(x.id)) || {},
+            { id: x.id, name: x.name, codes: tp.codes[i] }))
+        }));
+        choques.forEach(x => descartarPropio(currentMes, x.id, x.di));
+        showShareToast("Listo: " + p.name + " día " + (di + 1) + " pasó a lo oficial.");
+      } catch (err) {
+        showShareToast(err && err.code === "permission-denied"
+          ? "Firebase no dejó publicar (revisá las reglas)."
+          : "No se pudo publicar. Revisá la conexión y probá de nuevo.");
+      }
+    }
+
     // Turnos que cambió el admin y todavía no publicó (programación oficial + sus cambios)
     function turnosAPublicar() {
       const codes = people.map((p, i) => (ORIGINAL_CODES[i] || []).slice());

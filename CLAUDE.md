@@ -90,6 +90,8 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   (`localStorage` `vpFueAdmin`). En cualquier otro se entra manteniendo apretado **Cambios** 3 segundos y soltando.
 - Vistas del admin (botón arriba a la izquierda): **A** (lo que ven todos, editable) → **I** (la programación
   inicial del mes, solo lectura) → **CJ**. La vista "O" (oficial) se sacó a pedido de Guillermo.
+- **Celular del admin**: en pantallas táctiles, Fer, Colores, los JSON y ⬆ Publicar se mudan a una ventana
+  que abre el botón ☰ (`menuAdminCelular`; muestra el número de cosas por publicar). En la PC siguen arriba.
 - **Licencia (LIC)**: no lleva texto (solo el color; el selector de turnos sí dice LIC). Los días de
   licencia no se pueden cambiar ni pedir (`esLicencia` en `puedeEditar`): solo el admin los puede corregir.
 

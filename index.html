@@ -1318,10 +1318,9 @@
     #colorCodes .shift-option { outline: 1px solid rgba(0,0,0,.12); outline-offset: -1px; }
     #colorCodes .shift-option.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.4); }
     body:not(.fb-on) .fb-only { display: none !important; }
-    /* Celular (pantalla táctil): las herramientas del admin van en una ventana (botón ☰).
-       En la PC siguen en la barra de arriba. */
+    /* Las herramientas del admin van en una ventana (botón ☰), en el celular y en la PC. */
     .adm-menu-btn { display: none; font-size: 0.95rem; padding: 4px 10px; }
-    body.menu-admin-celu.is-admin .adm-menu-btn { display: inline-flex; align-items: center; }
+    body.is-admin .adm-menu-btn { display: inline-flex; align-items: center; }
     .adm-menu-btn.pending { background: #dc2626; }
     .adm-menu-modal { max-width: 320px; }
     #adminMenuList { display: flex; flex-direction: column; gap: 8px; }
@@ -1658,7 +1657,6 @@
         <button type="button" id="btnFeriados" class="fer-btn admin-only" title="Marcar feriados">Fer</button>
         <button type="button" id="btnColores" class="col-btn admin-only" title="Colores de los turnos" aria-label="Colores de los turnos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18c.8 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg></button>
         <button type="button" id="btnExportJson" class="json-btn admin-only" title="Exportar JSON">↓ JSON</button>
-        <button type="button" id="btnCopyJson" class="json-btn admin-only" title="Copiar JSON al portapapeles">⧉ Copiar</button>
         <button type="button" id="btnImportJson" class="json-btn admin-only" title="Importar JSON">↑ JSON</button>
         <button type="button" id="btnMiAlmanaque" class="mi-btn" title="Mi almanaque" style="display:none"></button>
         <button type="button" id="btnPedidos" class="json-btn fb-only ped-btn" title="Pedidos de cambio de turno">Cambios</button>
@@ -5433,32 +5431,6 @@
       a.click();
       URL.revokeObjectURL(a.href);
     });
-    document.getElementById("btnCopyJson").addEventListener("click", async () => {
-      const jsonText = JSON.stringify(currentJson(), null, 2);
-      const btn = document.getElementById("btnCopyJson");
-      const marcarCopiado = () => {
-        const prev = btn.textContent;
-        btn.textContent = "✓ Copiado";
-        setTimeout(() => { btn.textContent = prev; }, 1500);
-      };
-      try {
-        await navigator.clipboard.writeText(jsonText);
-        marcarCopiado();
-      } catch (err) {
-        // Fallback para navegadores que no permiten el portapapeles moderno
-        const ta = document.createElement("textarea");
-        ta.value = jsonText;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        try { document.execCommand("copy"); marcarCopiado(); } catch (e2) {
-          alert("No se pudo copiar automáticamente. Mantené presionado el botón ↓ JSON y usá \"Compartir\".");
-        }
-        document.body.removeChild(ta);
-      }
-    });
     // Admin: sube el mes a Firebase (queda visible solo para los registrados)
     async function subirMesAdmin(data) {
       const mes = /^\d{4}-\d{2}$/.test(String(data.mes || "")) ? String(data.mes) : currentMes;
@@ -6395,30 +6367,14 @@
     }
     document.getElementById("btnFeriados").addEventListener("click", openFeriados);
 
-    // Celular: Fer, Colores, JSON y Publicar se mudan a la ventana del botón ☰ (en la PC quedan arriba).
-    (function menuAdminCelular() {
-      const IDS = ["btnFeriados", "btnColores", "btnExportJson", "btnCopyJson", "btnImportJson", "btnPublish"];
-      const QUEDA_ABIERTO = ["btnCopyJson", "btnPublish"]; // para ver "✓ Copiado" / "Publicando…"
+    // Fer, Colores, JSON y Publicar van en la ventana del botón ☰ (en el celular y en la PC).
+    (function menuAdmin() {
+      const IDS = ["btnFeriados", "btnColores", "btnExportJson", "btnImportJson", "btnPublish"];
+      const QUEDA_ABIERTO = ["btnPublish"]; // para ver "Publicando…"
       const overlay = document.getElementById("adminMenuOverlay");
       const lista = document.getElementById("adminMenuList");
-      const barra = document.querySelector("header .topbar");
-      const ancla = document.getElementById("btnMiAlmanaque");
-      const mq = window.matchMedia("(hover: none) and (pointer: coarse)");
       const cerrar = () => overlay.classList.remove("open");
-      function acomodar() {
-        const celu = mq.matches;
-        document.body.classList.toggle("menu-admin-celu", celu);
-        IDS.forEach(id => {
-          const b = document.getElementById(id);
-          if (!b) return;
-          if (celu) lista.appendChild(b);
-          else if (id === "btnPublish") barra.insertBefore(b, document.getElementById("btnAdminMenu"));
-          else barra.insertBefore(b, ancla);
-        });
-        if (!celu) cerrar();
-      }
-      acomodar();
-      if (mq.addEventListener) mq.addEventListener("change", acomodar);
+      IDS.forEach(id => { const b = document.getElementById(id); if (b) lista.appendChild(b); });
       document.getElementById("btnAdminMenu").addEventListener("click", () => overlay.classList.add("open"));
       document.getElementById("closeAdminMenu").addEventListener("click", cerrar);
       overlay.addEventListener("click", (e) => {

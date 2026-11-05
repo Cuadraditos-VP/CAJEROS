@@ -2449,9 +2449,9 @@
 
     // Códigos que se fusionan en un solo bloque cuando aparecen varios días seguidos
     const BLOCK_CODES = ["LAO", "10A", "10J", "C/A", "LIC"];
-    // Prueba: en estos bloques las líneas verticales de la grilla (días y DO/LU) pasan por encima.
+    // En estos bloques las líneas verticales de la grilla (días y DO/LU) pasan por encima.
     // Para volver a como estaba (bloque liso, sin líneas), dejar la lista vacía.
-    const LINEAS_EN_BLOQUES = ["LIC", "LAO"];
+    const LINEAS_EN_BLOQUES = ["LIC"];
     if (LINEAS_EN_BLOQUES.length) document.documentElement.classList.add("lineas-en-bloques");
 
     function buildRow(person, pi) {

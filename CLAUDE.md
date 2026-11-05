@@ -73,6 +73,7 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   mandado nada). Un celular no manda a CJ hasta tener los turnos del mes (si no, lo borraría).
   Al tocar una celda marcada en CJ se abre un cuadro con **de dónde vino** cada dato (qué celular lo
   mandó, según `yo_*`, o si lo publicó el dueño en su fila) y cuándo (`abrirInfoCj`).
+  Desde ese cuadro, **Pasar a lo oficial** publica solo esa celda (`pasarCjAOficial`).
 - Al abrir, la app muestra el inicio de la grilla principal (ni el grupo propio ni el almanaque:
   `ABRIR_ALMANAQUE_AL_INICIO = false`).
   Tras la recarga automática de 20 min vuelve a donde estaba (`recargaAutomatica` / `volverAPosicion`).
@@ -90,8 +91,9 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   (`localStorage` `vpFueAdmin`). En cualquier otro se entra manteniendo apretado **Cambios** 3 segundos y soltando.
 - Vistas del admin (botón arriba a la izquierda): **A** (lo que ven todos, editable) → **I** (la programación
   inicial del mes, solo lectura) → **CJ**. La vista "O" (oficial) se sacó a pedido de Guillermo.
-- **Celular del admin**: en pantallas táctiles, Fer, Colores, los JSON y ⬆ Publicar se mudan a una ventana
-  que abre el botón ☰ (`menuAdminCelular`; muestra el número de cosas por publicar). En la PC siguen arriba.
+- **Menú del admin (☰)**: Fer, Colores, los JSON y ⬆ Publicar están en la ventana del botón ☰, en el celular y
+  en la PC (`menuAdmin`; muestra el número de cosas por publicar). En jefes es igual (Bajar, JSON, Colores, Publicar).
+  El botón "Copiar" se sacó a pedido de Guillermo.
 - **Licencia (LIC)**: no lleva texto (solo el color; el selector de turnos sí dice LIC). Los días de
   licencia no se pueden cambiar ni pedir (`esLicencia` en `puedeEditar`): solo el admin los puede corregir.
 

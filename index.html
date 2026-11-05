@@ -1498,6 +1498,9 @@
     .grp-card tbody td.blk-last[data-code="LIC"]::after { right: 0; }
     .grp-card tbody td.blk[data-code="LIC"]:not(.blk-first) { border-left: 1px solid var(--blk-bg, transparent) !important; }
     .grp-card tbody td.blk[data-code="LIC"]:not(.blk-last) { border-right: 1px solid var(--blk-bg, transparent) !important; }
+    /* Prueba (LINEAS_EN_BLOQUES): las líneas de los días se ven también dentro del LIC */
+    html.lineas-en-bloques .grp-card tbody td.blk[data-code="LIC"]:not(.blk-first),
+    html.lineas-en-bloques .grp-card tbody td.blk[data-code="LIC"]:not(.blk-last) { border-left-color: var(--grid) !important; border-right-color: var(--grid) !important; }
     /* Vista del día como en jefes: código más grande y sin negrita fuerte */
     body.day-view .day-table td.day-only { font-size: 1.05rem !important; font-weight: 600 !important; }
     /* ===== PEDIDOS DE CAMBIO ===== */
@@ -2380,7 +2383,11 @@
           // La licencia no lleva texto (solo el color); en el selector de turnos sí, para saber qué se elige
           const hideText = code === "LIC" && !el.classList.contains("shift-option");
           el.style.color = hideText ? bg : fgFor(code, bg);
-          if (el.classList.contains("blk")) {
+          if (el.classList.contains("blk") && LINEAS_EN_BLOQUES.includes(code)) {
+            el.style.setProperty("--blk-bg", bg);
+            el.style.borderLeftColor = "";
+            el.style.borderRightColor = "";
+          } else if (el.classList.contains("blk")) {
             el.style.setProperty("--blk-bg", bg);
             el.style.borderLeftColor = el.classList.contains("blk-first") ? "" : bg;
             el.style.borderRightColor = el.classList.contains("blk-last") ? "" : bg;
@@ -2442,6 +2449,10 @@
 
     // Códigos que se fusionan en un solo bloque cuando aparecen varios días seguidos
     const BLOCK_CODES = ["LAO", "10A", "10J", "C/A", "LIC"];
+    // Prueba: en estos bloques las líneas verticales de la grilla (días y DO/LU) pasan por encima.
+    // Para volver a como estaba (bloque liso, sin líneas), dejar la lista vacía.
+    const LINEAS_EN_BLOQUES = ["LIC", "LAO"];
+    if (LINEAS_EN_BLOQUES.length) document.documentElement.classList.add("lineas-en-bloques");
 
     function buildRow(person, pi) {
       const tr = document.createElement("tr");
@@ -2763,7 +2774,7 @@
     function pintarLineasSemana(root) {
       (root || document).querySelectorAll(".week-sep").forEach(el => {
         if (!el.closest(".grp-card") || el.querySelector(":scope > .ws-line")) return;
-        if (el.matches('td.blk[data-code="LIC"]:not(.blk-first)')) return;
+        if (el.matches('td.blk[data-code="LIC"]:not(.blk-first)') && !LINEAS_EN_BLOQUES.includes("LIC")) return;
         const ln = document.createElement("i");
         ln.className = "ws-line";
         el.appendChild(ln);
@@ -2771,6 +2782,7 @@
       // Tapa las costuras entre los días de un bloque (ver .blk-seam en el CSS)
       (root || document).querySelectorAll("td.blk:not(.blk-first)").forEach(el => {
         if (!el.closest(".grp-card") || el.querySelector(":scope > .blk-seam")) return;
+        if (LINEAS_EN_BLOQUES.includes(el.dataset.code)) return;
         const sm = document.createElement("i");
         sm.className = "blk-seam";
         el.insertBefore(sm, el.firstChild);

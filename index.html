@@ -2200,8 +2200,37 @@
     }
     // mode: "oficial" = programación publicada · "actual" = con los cambios de ESTE celular
     //       "cj" = con los cambios que mandaron los cajeros (vista CJ del admin)
+    // Turnos de la programación INICIAL del mes (la primera publicada): no cambian por nada
+    // (ni lo que publica el admin, ni la División, ni los cambios de los cajeros). null si no se sabe.
+    function codigosIniciales(key, id) {
+      const info = mesInfo(key);
+      const d = MES_DATA[key];
+      let list = d && Array.isArray(d.inicial) && d.inicial.length ? d.inicial : null;
+      if (!list && seedConTurnos(key)) list = SEED_BY_MES[key];
+      const limpio = raw => {
+        const codes = Array(info.days).fill("");
+        (Array.isArray(raw) ? raw : String(raw || "").split(/\s+/)).forEach((c, i) => {
+          if (i < info.days) codes[i] = String(normCode(c) || "").trim().toUpperCase();
+        });
+        return codes;
+      };
+      if (list) {
+        const p = list.find(x => String(x.id) === String(id));
+        return p ? limpio(p.codes) : Array(info.days).fill("");
+      }
+      if (key === currentMes) {
+        const pi = people.findIndex(p => String(p.id) === String(id));
+        if (pi >= 0 && INITIAL_CODES[pi]) return limpio(INITIAL_CODES[pi]);
+      }
+      return null;
+    }
     function codesInMonth(key, id, mode) {
       const info = mesInfo(key);
+      if (mode === "inicial") {
+        const ini = codigosIniciales(key, id);
+        if (ini) return ini;
+        mode = "oficial";
+      }
       if (key === currentMes) {
         const pi = people.findIndex(p => String(p.id) === String(id));
         if (pi < 0) return Array(info.days).fill("");
@@ -6323,7 +6352,8 @@
       const el = document.getElementById("personOtSummary");
       if (!el) return;
       const id = people[pi] ? people[pi].id : "";
-      const prog = overtimePeriod(id, "oficial");
+      // "Programadas" = las de la programación inicial del mes (no cambian con nada que se publique después)
+      const prog = overtimePeriod(id, "inicial");
       // En la vista CJ del admin, "con cambios" usa los cambios que mandaron los cajeros
       const enCj = viewMode === "cj";
       const camb = overtimePeriod(id, enCj ? "cj" : "actual");

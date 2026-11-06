@@ -98,7 +98,7 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
 - **Menú del admin (☰)**: Fer, Colores, los JSON y ⬆ Publicar están en la ventana del botón ☰, en el celular y
   en la PC (`menuAdmin`; muestra el número de cosas por publicar). En jefes es igual (Bajar, JSON, Colores, Publicar).
   El botón "Copiar" se sacó a pedido de Guillermo.
-- **División** (rol intermedio entre el admin y los usuarios): el admin la marca en Celulares ("Hacer División",
+- **División** (rol intermedio entre el admin y los usuarios): el admin la marca en Celulares con la coronita 👑 al lado de Liberar (violeta = es División;
   colección `division_cajeros/{legajo o inv-código}`; `soyDivision()`, clase `is-division`). Puede: **autorizar pedidos sin
   contraparte** (en el cuadro del pedido, "Autorizar …": pasa a lo oficial y el pedido queda `estado: "autorizado"` con `por`;
   al que pidió le llega "Autorizado por la División — Nombre"), **pasar acordados a lo oficial** (Acordados → "Pasar a lo

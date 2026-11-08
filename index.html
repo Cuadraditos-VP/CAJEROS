@@ -1476,14 +1476,14 @@
     .grp-card tbody tr:last-child td { border-bottom: 0 !important; }
 
     /* Separador de semana (entre DO y LU) */
-    /* Línea DO/LU de 1px. No es un borde: es una rayita propia (.ws-line, la agrega
+    /* Línea DO/LU de 1,5px. No es un borde: es una rayita propia (.ws-line, la agrega
        pintarLineasSemana) que va por encima de la grilla, así las líneas grises horizontales
        no la cortan. En el medio de un bloque LIC no se pone: el bloque pasa por encima. */
     .grp-card .week-sep { border-left: 1px solid var(--grid) !important; }
     .grp-card td.week-sep { position: relative; overflow: visible !important; }
     .grp-card th.week-sep { overflow: visible !important; }
     .grp-card .week-sep > .ws-line {
-      position: absolute; left: -1px; top: -1px; bottom: -1px; width: 1px;
+      position: absolute; left: -1.25px; top: -1px; bottom: -1px; width: 1.5px;
       background: var(--ink); z-index: 3; pointer-events: none;
     }
     /* Bloques (LAO, LIC, 10A, 10J, C/A): en celulares con densidad "fraccionaria" (2,75, 2,625…)

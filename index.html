@@ -1386,7 +1386,7 @@
       color: var(--ink) !important;
       border: 0;
       border-left: 1px solid var(--grid);
-      border-bottom: 1px solid var(--ink) !important;
+      border-bottom: 2px solid var(--ink) !important;
       height: 46px !important;
       padding: 4px 1px !important;
       line-height: 1.1;
@@ -1434,12 +1434,12 @@
     /* Línea gruesa que separa nombres de días */
     .grp-card th.sticky-col-2, .grp-card td.sticky-col-2,
     body.names-hidden .grp-card th.sticky-col, body.names-hidden .grp-card td.sticky-col {
-      border-right: 1px solid var(--ink) !important;
+      border-right: 2px solid var(--ink) !important;
     }
     /* Esa línea, además, como rayita propia por encima: así las líneas grises horizontales no la cortan */
     .grp-card td.sticky-col-2, body.names-hidden .grp-card td.sticky-col { overflow: visible !important; }
     .grp-card td.sticky-col-2::after, body.names-hidden .grp-card td.sticky-col::after {
-      content: ""; position: absolute; right: -1px; top: -1px; bottom: -1px; width: 1px;
+      content: ""; position: absolute; right: -1px; top: -1px; bottom: -1px; width: 2px;
       background: var(--ink); z-index: 1; pointer-events: none;
     }
     body.names-hidden .grp-card td.sticky-col-2::after { content: none; }

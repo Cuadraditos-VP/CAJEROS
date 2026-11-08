@@ -1654,6 +1654,19 @@
     #sinDatos.show { display: block; }
     body.sin-datos .group, body.sin-datos #groupCards, body.sin-datos .day-split { display: none !important; }
     #sinDatos button { margin-top: 12px; border: 0; border-radius: 8px; padding: 9px 16px; background: #0f766e; color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+    /* ===== RETOQUES VISUALES ===== */
+    /* Logo de la app al lado del mes */
+    .app-logo { width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+    @media (max-width: 520px) { .app-logo { width: 26px; height: 26px; border-radius: 8px; } }
+    /* Tu fila: nombre con fondo suave y una barra al costado */
+    tr.mi-fila td.person-id, tr.mi-fila td.person-name { background: #ccfbf1 !important; color: #115e59 !important; font-weight: 800; }
+    tr.mi-fila td.person-id { box-shadow: inset 4px 0 0 #0f766e; }
+    /* Botones de arriba con la misma forma */
+    .mi-btn, .ped-btn { height: 34px !important; border-radius: 17px !important; padding: 0 14px !important; font-size: 0.8rem !important;
+      font-weight: 700 !important; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+    .mi-btn { background: #0f766e; color: #fff; border-color: #0f766e; }
+    /* Banco de cambios: los días sin propuestas quedan limpios */
+    .bc-day .bc-cant.cero { visibility: hidden; }
 </style>
 </head>
 <body class="month-view">
@@ -1674,6 +1687,7 @@
         </button>
         <button id="btnOriginalView" class="view-original-btn admin-only" title="Actual">A</button>
         <select id="monthSelect" class="month-select" title="Mes" aria-label="Mes" style="display:none"></select>
+        <img class="app-logo" src="icon-192.png" alt="" aria-hidden="true">
         <h1><span class="title-full" id="titleFull">PROGRAMACIÓN CAJEROS</span><span class="title-short" id="titleShort"></span></h1>
         <button type="button" id="btnFeriados" class="fer-btn admin-only" title="Marcar feriados">Fer</button>
         <button type="button" id="btnColores" class="col-btn admin-only" title="Colores de los turnos" aria-label="Colores de los turnos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18c.8 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg></button>
@@ -2546,9 +2560,14 @@
     const LINEAS_EN_BLOQUES = ["LIC"];
     if (LINEAS_EN_BLOQUES.length) document.documentElement.classList.add("lineas-en-bloques");
 
+    // La fila de quien usa el celular se resalta (el admin no tiene fila propia)
+    function esMiFila(person) {
+      return !!miLegajo && currentUser !== "ADMIN" && String(person.id) === String(miLegajo);
+    }
     function buildRow(person, pi) {
       const tr = document.createElement("tr");
       tr.dataset.pi = String(pi);
+      if (esMiFila(person)) tr.classList.add("mi-fila");
       tr.innerHTML = `
         <td class="sticky-col person-id" data-pi="${pi}">${person.id}</td>
         <td class="sticky-col-2 person-name" data-pi="${pi}">${person.name}</td>
@@ -2615,6 +2634,7 @@
     function buildDayRow(person, pi) {
       const tr = document.createElement("tr");
       tr.dataset.pi = String(pi);
+      if (esMiFila(person)) tr.classList.add("mi-fila");
 
       const tdId = document.createElement("td");
       tdId.className = "sticky-col person-id";

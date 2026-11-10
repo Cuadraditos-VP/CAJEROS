@@ -54,6 +54,10 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   usarla solo en Safari"); un link de invitación abierto en Safari no se gasta y muestra el código,
   que se escribe en la app con "Tengo un código de invitación". En Celulares, "(app)" = instalada.
   No usar `alert`/`confirm` después de esperar a Firebase (en iPhone a veces no aparecen).
+  **Pasar de Safari a la app** (sin el admin): en Safari registrado, Cambios → "📲 Pasar a la app" (`abrirPase`) saca un
+  código de 6 cifras que vale 10 min (`pases_cajeros`); en la app se escribe con "Tengo un código de invitación" (`usarPase`):
+  toma la reserva del legajo con `pase`, borra el `yo_*` de Safari y Safari se libera solo (`vigilarPase`/`paseHecho`).
+  Reglas: `REGLAS-FIREBASE-PASES.md`.
 - **Externos**: entran con un link de invitación del admin (Celulares → Invitar, colección
   `invitados_cajeros`). No reservan legajo, no tienen fila propia (no publican ni piden cambios).
   El código de la invitación es de 3 cifras (`codigoInvitacionLibre`, no repite uno existente; a pedido de Guillermo;

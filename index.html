@@ -1372,7 +1372,7 @@
     .wa-btn svg { width: 18px; height: 18px; fill: currentColor; }
     .wa-btn.busy { opacity: .5; pointer-events: none; }
     /* ===================== DISEÑO "TARJETAS" ===================== */
-    :root { --ink: #111827; --grid: #e5e7eb; }
+    :root { --ink: #111827; --grid: #e5e7eb; --grid-v: #e5e7eb; }  /* --grid-v: líneas verticales entre días (Colores → Líneas) */
     body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #fff; color: var(--ink); }
     header h1 { color: var(--ink); font-weight: 500; letter-spacing: -0.01em; font-size: 1.25rem; }
     header h1 b { font-weight: 800; }
@@ -1401,7 +1401,7 @@
       background: #fff !important;
       color: var(--ink) !important;
       border: 0;
-      border-left: 1px solid var(--grid);
+      border-left: 1px solid var(--grid-v);
       border-bottom: 2px solid var(--ink) !important;
       height: 46px !important;
       padding: 4px 1px !important;
@@ -1475,6 +1475,7 @@
     /* Celdas de turnos */
     .grp-card tbody td:not(.sticky-col):not(.sticky-col-2) {
       border: 1px solid var(--grid);
+      border-left-color: var(--grid-v); border-right-color: var(--grid-v);
       height: 32px !important;
     }
     .grp-card tbody tr:last-child td { border-bottom: 0 !important; }
@@ -1484,6 +1485,12 @@
        pintarLineasSemana) que va por encima de la grilla, así las líneas grises horizontales
        no la cortan. En el medio de un bloque LIC no se pone: el bloque pasa por encima. */
     .grp-card .week-sep { border-left: 1px solid var(--grid) !important; }
+    /* Botones de Colores → Líneas entre días */
+    .lineas-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+    .lineas-row > span { font-size: 0.75rem; font-weight: 700; color: #334155; margin-right: 2px; }
+    .lineas-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 0.72rem; font-weight: 700; color: #334155; cursor: pointer; }
+    .lineas-btn i { display: inline-block; width: 3px; height: 16px; border-radius: 1px; }
+    .lineas-btn.selected { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; box-shadow: 0 0 0 1px #2563eb; }
     .grp-card td.week-sep { position: relative; overflow: visible !important; }
     .grp-card th.week-sep { overflow: visible !important; }
     .grp-card .week-sep > .ws-line {
@@ -1533,7 +1540,7 @@
     .grp-card tbody td.blk[data-code="LIC"]:not(.blk-last) { border-right: 1px solid var(--blk-bg, transparent) !important; }
     /* Prueba (LINEAS_EN_BLOQUES): las líneas de los días se ven también dentro del LIC */
     html.lineas-en-bloques .grp-card tbody td.blk[data-code="LIC"]:not(.blk-first),
-    html.lineas-en-bloques .grp-card tbody td.blk[data-code="LIC"]:not(.blk-last) { border-left-color: var(--grid) !important; border-right-color: var(--grid) !important; }
+    html.lineas-en-bloques .grp-card tbody td.blk[data-code="LIC"]:not(.blk-last) { border-left-color: var(--grid-v) !important; border-right-color: var(--grid-v) !important; }
     /* Vista del día como en jefes: código más grande y sin negrita fuerte */
     body.day-view .day-table td.day-only { font-size: 1.05rem !important; font-weight: 600 !important; }
     /* ===== PEDIDOS DE CAMBIO ===== */
@@ -1842,6 +1849,11 @@
           </label>
           <button type="button" id="letraAuto" style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:7px 10px;font-size:0.72rem;font-weight:700;color:#334155;cursor:pointer">Letras automáticas</button>
         </div>
+      </div>
+      <div class="lineas-row">
+        <span>Líneas entre días</span>
+        <button type="button" class="lineas-btn" data-lineas="claro"><i style="background:#E5E7EB"></i>Gris claro</button>
+        <button type="button" class="lineas-btn" data-lineas="oscuro"><i style="background:#6B7280"></i>Gris oscuro</button>
       </div>
       <div class="palette-actions">
         <button class="btn btn-clear" id="resetColor">Restablecer este</button>
@@ -2521,7 +2533,21 @@
       return lum > 0.55 ? "#1a1a1a" : "#ffffff";
     }
 
+    // Líneas verticales de la grilla (entre día y día; las de DO/LU quedan siempre negras).
+    // Se guardan con los colores, con la clave "LINEAS", así viajan con ⬆ Publicar.
+    const LINEAS_CLARO = "#E5E7EB", LINEAS_OSCURO = "#6B7280";
+    function colorLineas() {
+      const v = String(colorMap.LINEAS || "").toUpperCase();
+      return /^#[0-9A-F]{6}$/.test(v) ? v : LINEAS_CLARO;
+    }
+    function aplicarLineas() {
+      document.documentElement.style.setProperty("--grid-v", colorLineas());
+      document.querySelectorAll("[data-lineas]").forEach(b => {
+        b.classList.toggle("selected", (b.dataset.lineas === "oscuro") === (colorLineas() === LINEAS_OSCURO));
+      });
+    }
     function applyColors() {
+      aplicarLineas();
       document.querySelectorAll("[data-code]").forEach(el => {
         const code = el.dataset.code;
         if (!code) return;
@@ -6401,7 +6427,7 @@
       const choques = choquesConPropios(tp);
       const partes = [];
       if (nt) partes.push("• " + nt + (nt === 1 ? " turno cambiado" : " turnos cambiados") + " (pasan a lo oficial: los ven todos y Control VP)");
-      if (cols.length) partes.push("• Colores: " + cols.join(", "));
+      if (cols.length) partes.push("• Colores: " + cols.map(c => c === "LINEAS" ? "líneas entre días" : c).join(", "));
       if (ferChange) partes.push("• Feriados de " + MES.nombre.toLowerCase() + ": " + (feriados.length ? feriados.map(x => x + 1).join(", ") : "ninguno"));
       const msg = (partes.length
         ? "¿Publicar para todos?\n\n" + partes.join("\n")
@@ -7581,6 +7607,13 @@
     }
     function closeColors() { colorsOverlay.classList.remove("open"); }
     document.getElementById("btnColores").addEventListener("click", openColors);
+    document.querySelectorAll("[data-lineas]").forEach(b => b.addEventListener("click", () => {
+      if (currentUser !== "ADMIN") return;
+      const v = b.dataset.lineas === "oscuro" ? LINEAS_OSCURO : LINEAS_CLARO;
+      colorMap.LINEAS = v;
+      colorOverrides.LINEAS = v;
+      saveColorOverrides(); refreshColorsEverywhere();
+    }));
     document.getElementById("closeColors").addEventListener("click", closeColors);
     document.getElementById("doneColors").addEventListener("click", closeColors);
     colorsOverlay.addEventListener("click", (e) => { if (e.target === colorsOverlay) closeColors(); });

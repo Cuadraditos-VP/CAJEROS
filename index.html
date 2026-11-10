@@ -2055,6 +2055,12 @@
     const WEEKDAY_ABBR = ["LU","MA","MI","JU","VI","SA","DO"];
     const FIRST_MES = "2026-10";
     const DEFAULT_SHIFT_CODES = ["MD","MS","T3","T","TE","N","E1","E","X","F","LAO"];
+    // Orden de los turnos en los selectores (a pedido de Guillermo). Los que no están acá van al final.
+    const ORDEN_TURNOS = ["MD","MS","T3","T","TE","N","E","E1","X","F","14F","DV","LAO","10A","10J","C/A","LIC"];
+    function ordenarTurnos(list) {
+      const pos = c => { const i = ORDEN_TURNOS.indexOf(c); return i < 0 ? ORDEN_TURNOS.length : i; };
+      return list.map((c, i) => [c, i]).sort((a, b) => pos(a[0]) - pos(b[0]) || a[1] - b[1]).map(x => x[0]);
+    }
 
     function mesInfo(key) {
       const [y, m] = key.split("-").map(Number);
@@ -2450,7 +2456,7 @@
     const DAY_VIEW_ORDER = ["MD","MS","T3","T","TE","N","E1","E","X","F"];
 
     // Todos los códigos de turno asignables desde el abanico (además de "vacío")
-    let ALL_SHIFT_CODES = DEFAULT_SHIFT_CODES.slice();
+    let ALL_SHIFT_CODES = ordenarTurnos(DEFAULT_SHIFT_CODES);
 
     const CODES = ["MD","MS","T3","T","TE","N","E1","E","X","F","LAO"];
 
@@ -2916,7 +2922,7 @@
     function applyCatalog(data) {
       if (!data || typeof data !== "object") return;
       if (Array.isArray(data.codigos) && data.codigos.length) {
-        ALL_SHIFT_CODES = data.codigos.map(normCode).filter(Boolean);
+        ALL_SHIFT_CODES = ordenarTurnos(data.codigos.map(normCode).filter(Boolean));
       }
       if (data.colores && typeof data.colores === "object") {
         Object.keys(data.colores).forEach(k => {
@@ -3004,7 +3010,7 @@
     function switchMonth(key) {
       setMonthGlobals(key);
       const data = MES_DATA[key];
-      ALL_SHIFT_CODES = DEFAULT_SHIFT_CODES.slice();
+      ALL_SHIFT_CODES = ordenarTurnos(DEFAULT_SHIFT_CODES);
       officialFeriados = [];
       if (data) {
         applyCatalog(data);

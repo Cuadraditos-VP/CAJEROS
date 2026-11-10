@@ -56,6 +56,8 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   No usar `alert`/`confirm` después de esperar a Firebase (en iPhone a veces no aparecen).
 - **Externos**: entran con un link de invitación del admin (Celulares → Invitar, colección
   `invitados_cajeros`). No reservan legajo, no tienen fila propia (no publican ni piden cambios).
+  El código de la invitación es de 3 cifras (`codigoInvitacionLibre`, no repite uno existente; a pedido de Guillermo;
+  en cajeros, las de Control VP siguen con el código largo).
   `EXTERNOS` en `index.html` quedó vacío (Valeria pasó a invitación).
 - **Fila propia vs. ajena**: cualquiera puede cambiar cualquier fila en su celular, pero solo
   lo de **su propia fila** se publica para todos (colección `propios_cajeros`, doc

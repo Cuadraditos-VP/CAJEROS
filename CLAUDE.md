@@ -98,7 +98,7 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
 - Arriba: solo el selector de mes (el título solo si hay un único mes) y un botón con el
   apellido del usuario (`btnMiAlmanaque`) que abre su almanaque; el admin no lo ve.
 - **Buscador de nombres** (solo cajeros, a pedido de Guillermo): arriba a la izquierda, en la fila del título y sobre la
-  columna de nombres. Solo en pantallas anchas (PC, ≥760px; en el celular no entra) y solo si hay gente en la grilla.
+  columna de legajos y nombres del primer recuadro (`ubicar` lo alinea con esa columna). Solo en pantallas anchas (PC, ≥760px; en el celular no entra) y solo si hay gente en la grilla.
   Busca por nombre o legajo (sin importar acentos); con Enter o tocando el resultado lleva a esa fila y la resalta en amarillo.
 - Copia de los meses en el celular (cajeros `cajTurnos:<mes>`, jefes `ctFb:<mes>`) para abrir al
   instante y sin internet; solo en registrados/admin y se borra si el admin libera el celular.

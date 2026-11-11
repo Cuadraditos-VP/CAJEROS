@@ -7796,13 +7796,25 @@
     // Buscador de nombres (arriba a la izquierda, solo en PC): lleva a la fila de esa persona
     (function () {
       const inp = document.getElementById("buscaNombre"), lista = document.getElementById("buscaLista");
-      if (!inp || !lista) return;
+      if (!inp || !lista || !document.getElementById("buscador")) return;
       const norm = t => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
       const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
       let hallados = [], sel = 0;
       // El buscador aparece solo cuando hay gente en la grilla
-      const verSiHayGente = () => document.body.classList.toggle("con-datos", people.length > 0);
+      const caja = document.getElementById("buscador");
+      // Lo ubica justo encima de la columna de legajos y nombres del primer recuadro
+      function ubicar() {
+        const a = document.querySelector("#groupCards th.sticky-col"), b = document.querySelector("#groupCards th.sticky-col-2");
+        const h = caja.parentElement.getBoundingClientRect();
+        if (!a || !b || !a.offsetParent) return;
+        const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+        caja.style.left = Math.round(ra.left - h.left) + "px";
+        caja.style.width = Math.max(150, Math.round(rb.right - ra.left)) + "px";
+      }
+      const verSiHayGente = () => { document.body.classList.toggle("con-datos", people.length > 0); requestAnimationFrame(ubicar); };
       new MutationObserver(verSiHayGente).observe(document.getElementById("groupCards"), { childList: true });
+      window.addEventListener("resize", () => requestAnimationFrame(ubicar));
+      window.addEventListener("load", ubicar);
       verSiHayGente();
       function pintar() {
         const q = norm(inp.value).trim();

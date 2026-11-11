@@ -1722,6 +1722,27 @@
     .mi-btn { background: #0f766e; color: #fff; border-color: #0f766e; }
     /* Banco de cambios: los días sin propuestas quedan limpios */
     .bc-day .bc-cant.cero { visibility: hidden; }
+    /* Buscador de nombres: arriba a la izquierda, sobre la columna de nombres (solo en pantallas anchas: PC) */
+    header { position: relative; }
+    header:focus-within { z-index: 70; }
+    .buscador { display: none; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 196px; z-index: 40; text-align: left; }
+    @media (min-width: 760px) { body.con-datos .buscador { display: block; } }
+    #buscaNombre {
+      width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px;
+      font: inherit; font-size: 0.82rem; background: #fff; color: #0f172a; outline: none;
+    }
+    #buscaNombre:focus { border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15,118,110,.18); }
+    .busca-lista { display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 300px; overflow-y: auto;
+      background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 24px rgba(15,23,42,.18); }
+    .busca-lista.open { display: block; }
+    .busca-lista button { display: flex; justify-content: space-between; gap: 8px; width: 100%; border: 0; background: none; padding: 7px 10px; text-align: left;
+      font: inherit; font-size: 0.8rem; color: #0f172a; cursor: pointer; }
+    .busca-lista button small { color: #64748b; flex: 0 0 auto; }
+    .busca-lista button.sel, .busca-lista button:hover { background: #ccfbf1; }
+    .busca-lista .busca-nada { padding: 8px 10px; font-size: 0.8rem; color: #64748b; }
+    tr.busca-hit td { animation: buscaHit 2.6s ease-out; }
+    @keyframes buscaHit { 0%, 60% { box-shadow: inset 0 3px 0 #f59e0b, inset 0 -3px 0 #f59e0b; } 100% { box-shadow: none; } }
+    tbody tr.busca-hit.busca-hit td.sticky-col, tbody tr.busca-hit.busca-hit td.sticky-col-2 { background: #fde047 !important; transition: background .6s; }
 </style>
 </head>
 <body class="month-view">
@@ -1736,6 +1757,10 @@
   </div>
   <div class="container">
     <header>
+      <div id="buscador" class="buscador" role="search">
+        <input type="search" id="buscaNombre" placeholder="🔍 Buscar nombre" autocomplete="off" aria-label="Buscar un nombre en la programación">
+        <div id="buscaLista" class="busca-lista"></div>
+      </div>
       <div class="topbar">
         <button type="button" id="btnUser" class="user-btn" title="Usuario" aria-label="Usuario">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5z"/></svg>
@@ -7767,6 +7792,68 @@
       updatePublishBtn();
       if (personOverlay.classList.contains("open") && currentCalPi !== null) openPersonCalendar(currentCalPi);
     });
+
+    // Buscador de nombres (arriba a la izquierda, solo en PC): lleva a la fila de esa persona
+    (function () {
+      const inp = document.getElementById("buscaNombre"), lista = document.getElementById("buscaLista");
+      if (!inp || !lista) return;
+      const norm = t => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+      let hallados = [], sel = 0;
+      // El buscador aparece solo cuando hay gente en la grilla
+      const verSiHayGente = () => document.body.classList.toggle("con-datos", people.length > 0);
+      new MutationObserver(verSiHayGente).observe(document.getElementById("groupCards"), { childList: true });
+      verSiHayGente();
+      function pintar() {
+        const q = norm(inp.value).trim();
+        if (!q) { lista.classList.remove("open"); lista.innerHTML = ""; hallados = []; return; }
+        const partes = q.split(/\s+/);
+        hallados = people.map((p, pi) => ({ p, pi }))
+          .filter(({ p }) => { const t = norm(p.name) + " " + norm(p.id); return partes.every(x => t.includes(x)); })
+          .slice(0, 30);
+        sel = 0;
+        lista.innerHTML = hallados.length ? hallados.map((h, k) =>
+          '<button type="button" data-k="' + k + '"' + (k === sel ? ' class="sel"' : "") + '><span>' + esc(h.p.name) +
+          '</span><small>' + esc(h.p.id) + '</small></button>').join("") : '<div class="busca-nada">No hay nadie con ese nombre</div>';
+        lista.classList.add("open");
+      }
+      function marcarSel() {
+        lista.querySelectorAll("button").forEach((b, k) => b.classList.toggle("sel", k === sel));
+        const b = lista.querySelector("button.sel"); if (b) b.scrollIntoView({ block: "nearest" });
+      }
+      function irA(pi) {
+        lista.classList.remove("open");
+        if (people[pi]) inp.value = people[pi].name;
+        inp.blur();
+        // La fila visible de esa persona (en la vista del mes o la de un día)
+        const td = Array.from(document.querySelectorAll('td.person-name[data-pi="' + pi + '"]')).find(x => x.offsetParent);
+        if (!td) return;
+        const tr = td.closest("tr");
+        // Sube por los contenedores hasta el que tiene la barra de desplazamiento vertical
+        let wrap = tr.parentElement;
+        while (wrap && wrap !== document.body && !(wrap.scrollHeight > wrap.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(wrap).overflowY))) wrap = wrap.parentElement;
+        const r = tr.getBoundingClientRect();
+        if (wrap && wrap !== document.body) {
+          const w = wrap.getBoundingClientRect();
+          wrap.scrollTo({ top: wrap.scrollTop + (r.top - w.top) - (wrap.clientHeight - r.height) / 2, behavior: "smooth" });
+        } else {
+          window.scrollTo({ top: window.scrollY + r.top - (window.innerHeight - r.height) / 2, behavior: "smooth" });
+        }
+        tr.classList.remove("busca-hit"); void tr.offsetWidth; tr.classList.add("busca-hit");
+        setTimeout(() => tr.classList.remove("busca-hit"), 2700);
+      }
+      inp.addEventListener("input", pintar);
+      inp.addEventListener("focus", () => { if (inp.value) { inp.select(); pintar(); } });
+      inp.addEventListener("keydown", e => {
+        if (e.key === "ArrowDown" && hallados.length) { sel = Math.min(sel + 1, hallados.length - 1); marcarSel(); e.preventDefault(); }
+        else if (e.key === "ArrowUp" && hallados.length) { sel = Math.max(sel - 1, 0); marcarSel(); e.preventDefault(); }
+        else if (e.key === "Enter") { if (hallados[sel]) irA(hallados[sel].pi); e.preventDefault(); }
+        else if (e.key === "Escape") { inp.value = ""; pintar(); inp.blur(); }
+      });
+      lista.addEventListener("mousedown", e => e.preventDefault());
+      lista.addEventListener("click", e => { const b = e.target.closest("button[data-k]"); if (b && hallados[+b.dataset.k]) irA(hallados[+b.dataset.k].pi); });
+      inp.addEventListener("blur", () => setTimeout(() => lista.classList.remove("open"), 150));
+    })();
 
 </script>
   <script>

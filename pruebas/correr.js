@@ -144,6 +144,12 @@ function chequear(nombre, cond, detalle) {
     const mi = await A.evaluate(() => { const b = document.getElementById("btnMiAlmanaque"); const vis = getComputedStyle(b).display !== "none";
       b.click(); const r = { vis, txt: b.textContent, abierto: document.getElementById("personOverlay").classList.contains("open"), pi: currentCalPi }; closePersonCalendar(); return r; });
     chequear("arriba aparece su nombre y abre su almanaque", mi.vis && /PRUEBA/.test(mi.txt) && mi.abierto && mi.pi === s.a, mi);
+    // Horas extra: cada uno ve solo las suyas en el almanaque
+    const otVe = async (pg, pi) => pg.evaluate(pi => { openPersonCalendar(pi); const el = document.getElementById("personOtSummary");
+      const r = getComputedStyle(el).display !== "none" && /Horas extras/.test(el.textContent); closePersonCalendar(); return r; }, pi);
+    const otOtro = await A.evaluate(a => people.findIndex((p, i) => i !== a), s.a);
+    chequear("en su almanaque ve sus horas extra", await otVe(A, s.a));
+    chequear("en el almanaque de otro no ve sus horas extra", !(await otVe(A, otOtro)));
     await A.evaluate(s => { pedTengoSel = actualDe(s.a, s.d); guardarPedido(s.a, s.d, [s.y, s.z]); closePedido(); }, s);
     await wait(800);
     const ped = be.st["pedidos_" + APP] && be.st["pedidos_" + APP][s.mes + "_" + s.ida + "_" + (s.d + 1)];
@@ -212,6 +218,8 @@ function chequear(nombre, cond, detalle) {
         const r = { login: window.__login, cambios: pedidosMode }; if (pedidosMode) setPedidosMode(false); return r; });
       chequear("un toque normal sigue abriendo Cambios", !corto.login && corto.cambios, corto);
     }
+    if (await AD.evaluate(() => people.length > 0)) chequear("el admin ve las horas extra de cualquiera", await AD.evaluate(() => { openPersonCalendar(0);
+      const el = document.getElementById("personOtSummary"); const r = getComputedStyle(el).display !== "none" && /Horas extras/.test(el.textContent); closePersonCalendar(); return r; }));
     chequear("al admin no le aparece el botón de nombre", await AD.evaluate(() => getComputedStyle(document.getElementById("btnMiAlmanaque")).display === "none"));
     chequear("al admin no le pregunta \"¿Quién sos?\"", !(await AD.evaluate(() => document.getElementById("yoOverlay").classList.contains("open"))));
     if (typeof probarLicAdmin === "function") {

@@ -192,7 +192,11 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
 - En cajeros el admin sube el mes entero con ↑ JSON (va a `turnos_cajeros` y al padrón); sus cambios de
   turnos sueltos van con ⬆ Publicar (también a `turnos_cajeros`), y los colores/feriados/letras con ⬆ Publicar
   a la colección `cajeros`.
-  Cada mes nuevo: Guillermo pasa el PDF, se arma el JSON y él lo sube con ↑ JSON (no a GitHub).
+  Cada mes nuevo: Guillermo lo sube él mismo con **↑ PDF** (menú ☰): la app lee el PDF de la programación
+  (el que sale del Excel, con texto; pdf.js de cdnjs, se carga solo al usarlo) y muestra una revisión antes de subir
+  (`abrirPdfMes`, `leerPdfProgramacion`): nombres de siempre por legajo (`nombreConocido`), nuevos con "APELLIDO, NOMBRE"
+  editable, los que ya no están (vs. el mes anterior), licencias (celda sin texto en el PDF = LIC) y la grilla.
+  Ignora la tabla "DOTACION" del final. Al confirmar usa `subirMesAdmin` igual que ↑ JSON. ↑ JSON sigue andando.
 - Colección de CJ: `cj_cajeros` (en jefes es `cj`). Hay `server.js` para correr la app en local.
 - **Control VP**: dos apps leen de acá: `Cuadraditos-VP/Control-VP` (la de jefes en el celular, a la que apunta
   el link de la invitación) y `Cuadraditos-VP/ControlVP-completo` (la de cabina en la PC). Las dos leen `turnos_cajeros`,

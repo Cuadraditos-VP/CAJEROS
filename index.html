@@ -1386,6 +1386,26 @@
     body.is-admin .adm-menu-btn { display: inline-flex; align-items: center; }
     .adm-menu-btn.pending { background: #dc2626; }
     .adm-menu-modal { max-width: 320px; }
+    /* ↑ PDF: revisión del mes leído del PDF antes de subirlo */
+    .pdf-modal { max-width: min(1150px, 96vw); }
+    .pdf-modal .pdf-res { font-size: 0.9rem; margin: 0 0 10px; }
+    .pdf-modal .pdf-box { border-radius: 10px; padding: 8px 10px; margin: 0 0 10px; font-size: 0.82rem; }
+    .pdf-modal .pdf-box h4 { margin: 0 0 6px; font-size: 0.85rem; }
+    .pdf-modal .pdf-box ul { margin: 0; padding-left: 18px; }
+    .pdf-modal .pdf-ojo { background: #fef3c7; border: 1px solid #f59e0b; }
+    .pdf-modal .pdf-nue { background: #dcfce7; border: 1px solid #22c55e; }
+    .pdf-modal .pdf-van { background: #fee2e2; border: 1px solid #ef4444; }
+    .pdf-modal .pdf-lic { background: #eef2ff; border: 1px solid #818cf8; }
+    .pdf-modal .pdf-nue input { font: inherit; padding: 2px 6px; width: 220px; max-width: 100%; text-transform: uppercase; }
+    .pdf-modal .pdf-tabla-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .pdf-modal table { border-collapse: collapse; font-size: 0.66rem; }
+    .pdf-modal td, .pdf-modal th { border: 1px solid #e2e8f0; padding: 2px 3px; text-align: center; white-space: nowrap; }
+    .pdf-modal table { table-layout: auto; width: auto; }
+    #pdfOverlay .pdf-modal td, #pdfOverlay .pdf-modal th { width: auto !important; min-width: 26px !important; max-width: none !important; height: auto !important;
+      font-size: 0.66rem !important; padding: 2px 3px !important; position: static !important; cursor: default; }
+    #pdfOverlay .pdf-modal td.pdf-nom { text-align: left; font-weight: 600; min-width: 170px !important; }
+    .pdf-modal tr.pdf-grp td { background: #334155; color: white; text-align: left; font-weight: 700; }
+    .pdf-modal tr.pdf-es-nuevo td.pdf-nom { background: #dcfce7; }
     #adminMenuList { display: flex; flex-direction: column; gap: 8px; }
     #adminMenuList button {
       width: 100%; height: auto; margin: 0; padding: 12px; border-radius: 10px;
@@ -1814,6 +1834,7 @@
         <button type="button" id="btnColores" class="col-btn admin-only" title="Colores de los turnos" aria-label="Colores de los turnos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18c.8 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg></button>
         <button type="button" id="btnExportJson" class="json-btn admin-only" title="Exportar JSON">↓ JSON</button>
         <button type="button" id="btnImportJson" class="json-btn admin-only" title="Importar JSON">↑ JSON</button>
+        <button type="button" id="btnImportPdf" class="json-btn admin-only" title="Cargar el mes desde el PDF de la programación">↑ PDF</button>
         <button type="button" id="btnMiAlmanaque" class="mi-btn" title="Mi almanaque" style="display:none"></button>
         <button type="button" id="btnPedidos" class="json-btn fb-only ped-btn" title="Pedidos de cambio de turno"><span class="ped-txt">Cambios</span><span class="ped-sim" aria-hidden="true">⇄</span></button>
         <button type="button" id="btnCelTop" class="json-btn admin-only cel-top-btn" title="Celulares" aria-label="Celulares">📱</button>
@@ -1822,6 +1843,7 @@
         <button type="button" id="btnPublish" class="json-btn admin-only fb-only publish-btn" title="Publicar para todos: tus cambios de turnos, colores y feriados">⬆ Publicar</button>
         <button type="button" id="btnAdminMenu" class="json-btn admin-only adm-menu-btn" title="Herramientas de admin" aria-label="Herramientas de admin">☰</button>
         <input id="importJsonFile" type="file" accept="application/json,.json" hidden>
+        <input id="importPdfFile" type="file" accept="application/pdf,.pdf" hidden>
       </div>
     </header>
     <div class="palette-overlay" id="bancoOverlay">
@@ -2150,6 +2172,19 @@
         <button class="close-btn" id="closeAdminMenu" title="Cerrar">×</button>
       </div>
       <div id="adminMenuList"></div>
+    </div>
+  </div>
+  <div class="palette-overlay" id="pdfOverlay">
+    <div class="palette-modal pdf-modal">
+      <div class="palette-header">
+        <h3 id="pdfTitulo">Mes desde el PDF</h3>
+        <button class="close-btn" id="closePdf" title="Cerrar">×</button>
+      </div>
+      <div id="pdfCuerpo"></div>
+      <div class="palette-actions">
+        <button class="btn btn-clear" id="pdfCancelar">Cancelar</button>
+        <button class="btn btn-done" id="pdfSubir">Subir</button>
+      </div>
     </div>
   </div>
   <div class="palette-overlay" id="feriadosOverlay">
@@ -7342,6 +7377,226 @@
           : "No se pudo publicar. Revisá la conexión y probá de nuevo.");
       }
     }
+    // ========== ↑ PDF: cargar el mes desde el PDF de la programación (admin) ==========
+    // El PDF se lee en este aparato (no se guarda en ningún lado). Antes de subir se muestra
+    // una revisión: nuevos, los que ya no están, licencias y la grilla con los turnos.
+    const PDFJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    function cargarPdfJs() {
+      if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+      return new Promise((ok, mal) => {
+        const s = document.createElement("script");
+        s.src = PDFJS_URL;
+        s.onload = () => {
+          if (!window.pdfjsLib) return mal(new Error("pdfjs"));
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+          ok(window.pdfjsLib);
+        };
+        s.onerror = () => mal(new Error("pdfjs"));
+        document.head.appendChild(s);
+      });
+    }
+    // Lee el texto del PDF con su posición y arma { mes, grupos, people, dias }.
+    // Cada persona: legajo, apellido y nombre, y el turno de cada día según la columna del día.
+    async function leerPdfProgramacion(pdf) {
+      const MESES = MES_NOMBRES.map(m => sinAcentos(m));
+      let mes = null, cols = null, grupo = null, fin = false;
+      const grupos = [], gente = [];
+      for (let pn = 1; pn <= pdf.numPages && !fin; pn++) {
+        const page = await pdf.getPage(pn);
+        const tc = await page.getTextContent();
+        const items = tc.items.filter(it => it.str && it.str.trim()).map(it => ({
+          s: it.str.trim(), x: it.transform[4], cx: it.transform[4] + (it.width || 0) / 2, y: it.transform[5]
+        }));
+        // Filas: lo que está a la misma altura (±3)
+        items.sort((a, b) => b.y - a.y || a.x - b.x);
+        const filas = [];
+        items.forEach(it => {
+          const f = filas.find(f => Math.abs(f.y - it.y) <= 3);
+          if (f) f.items.push(it); else filas.push({ y: it.y, items: [it] });
+        });
+        filas.sort((a, b) => b.y - a.y);
+        for (const f of filas) {
+          const its = f.items.sort((a, b) => a.x - b.x);
+          const T = sinAcentos(its.map(i => i.s).join(" "));
+          if (!mes) {
+            const m = T.match(new RegExp("(" + MESES.join("|") + ")\\s+(\\d{4})"));
+            if (m) mes = m[2] + "-" + String(MESES.indexOf(m[1]) + 1).padStart(2, "0");
+          }
+          if (/^\s*DOTACION\b/.test(T)) { fin = true; break; } // la tabla del final no son turnos
+          const gm = T.match(/^\s*GRUPO\s*(\d+)\s*$/);
+          if (gm) { grupo = { name: "Grupo " + gm[1], count: 0 }; grupos.push(grupo); continue; }
+          // Encabezado con los números de los días: 1, 2, 3, …
+          if (its.length >= 28 && its.every((i, k) => i.s === String(k + 1))) { cols = its.map(i => i.cx); continue; }
+          if (!cols || !/^\d{3,6}$/.test(its[0].s)) continue;
+          const paso = (cols[cols.length - 1] - cols[0]) / (cols.length - 1);
+          const limite = cols[0] - paso / 2;
+          const nom = its.slice(1).filter(i => i.cx < limite);
+          const cods = its.slice(1).filter(i => i.cx >= limite);
+          if (!nom.length) continue;
+          // Apellido y nombre: el hueco más grande entre las palabras los separa
+          let corte = nom.length, mejor = -1;
+          for (let k = 1; k < nom.length; k++) {
+            const hueco = nom[k].x - nom[k - 1].cx;
+            if (hueco > mejor) { mejor = hueco; corte = k; }
+          }
+          const codes = cols.map(() => "");
+          const raros = [];
+          cods.forEach(i => {
+            let d = 0;
+            cols.forEach((c, k) => { if (Math.abs(c - i.cx) < Math.abs(cols[d] - i.cx)) d = k; });
+            if (Math.abs(cols[d] - i.cx) > paso / 2) { raros.push(i.s); return; }
+            codes[d] = codes[d] ? codes[d] + " " + i.s : i.s;
+          });
+          if (!grupo) { grupo = { name: "Grupo 1", count: 0 }; grupos.push(grupo); }
+          grupo.count++;
+          gente.push({ id: its[0].s, apellido: nom.slice(0, corte).map(i => i.s).join(" "),
+            nombre: nom.slice(corte).map(i => i.s).join(" "), codes, raros });
+        }
+      }
+      return { mes, grupos: grupos.filter(g => g.count), people: gente, dias: cols ? cols.length : 0 };
+    }
+    function sinAcentos(t) { return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase(); }
+    // Nombre que ya usa la app para ese legajo (del mes más nuevo que lo tenga)
+    function nombreConocido(id) {
+      const meses = Object.keys(MES_DATA).sort().reverse();
+      for (const k of meses) {
+        const p = ((MES_DATA[k] && MES_DATA[k].people) || []).find(x => String(x.id) === String(id));
+        if (p && p.name) return p.name;
+      }
+      return "";
+    }
+    let pdfMes = null; // lo leído, mientras se revisa
+    async function abrirPdfMes(file) {
+      const ov = document.getElementById("pdfOverlay"), cuerpo = document.getElementById("pdfCuerpo");
+      const btnSubir = document.getElementById("pdfSubir");
+      pdfMes = null;
+      document.getElementById("pdfTitulo").textContent = "Mes desde el PDF";
+      cuerpo.innerHTML = '<p class="pdf-res">Leyendo el PDF…</p>';
+      btnSubir.disabled = true;
+      ov.classList.add("open");
+      let r;
+      try {
+        const lib = await cargarPdfJs();
+        const pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+        r = await leerPdfProgramacion(pdf);
+      } catch (err) {
+        cuerpo.innerHTML = '<p class="pdf-res">No se pudo leer el PDF. Revisá la conexión a internet y que sea el PDF de la programación.</p>';
+        return;
+      }
+      if (!r.people.length) {
+        cuerpo.innerHTML = '<p class="pdf-res">No encontré turnos en este PDF. ¿Es el de la programación? (tiene que ser el PDF sacado del Excel, no una foto)</p>';
+        return;
+      }
+      const mes = r.mes || currentMes, mi = mesInfo(mes);
+      const avisos = [];
+      if (!r.mes) avisos.push("No encontré el mes en el título: lo tomo como " + mi.nombre.toLowerCase() + " " + mi.y + ".");
+      if (r.dias !== mi.days) avisos.push("El PDF tiene " + r.dias + " días y " + mi.nombre.toLowerCase() + " tiene " + mi.days + ".");
+      const conocidos = new Set(ORDEN_TURNOS.concat(ALL_SHIFT_CODES, Object.keys(colorMap)).map(normCode));
+      const desconocidos = {}, licencias = [];
+      const vistos = {};
+      const gente = [];
+      for (const p of r.people) {
+        if (vistos[p.id]) avisos.push("El legajo " + p.id + " aparece dos veces.");
+        vistos[p.id] = true;
+        const codes = [];
+        for (let d = 0; d < mi.days; d++) {
+          // Sin texto en la celda = licencia (en el PDF es solo el color)
+          const c = normCode(p.codes[d] || "") || "LIC";
+          if (!conocidos.has(c)) (desconocidos[c] = desconocidos[c] || []).push(p.apellido + " el " + (d + 1));
+          codes.push(c);
+        }
+        if (p.raros.length) avisos.push(p.apellido + " " + p.nombre + ": no supe en qué día va " + p.raros.join(", ") + ".");
+        const nLic = codes.filter(c => c === "LIC").length;
+        if (nLic) licencias.push(p.apellido + " " + p.nombre + (nLic === mi.days ? ": todo el mes" : ": " + nLic + (nLic === 1 ? " día" : " días")));
+        let name = nombreConocido(p.id), padron = false;
+        if (!name && fbReady) {
+          try {
+            const d = await fbDb.collection(PADRON_COLLECTION).doc(String(p.id)).get();
+            if (d.exists && d.data().name) { name = d.data().name; padron = true; }
+          } catch (e) {}
+        }
+        gente.push({ id: p.id, name: name || (p.apellido + ", " + p.nombre).toUpperCase(), codes,
+          nuevo: !name || padron, pdfNombre: p.apellido + " " + p.nombre });
+      }
+      Object.keys(desconocidos).forEach(c => avisos.push("Turno que la app no conoce: \"" + c + "\" (" +
+        desconocidos[c].slice(0, 4).join(", ") + (desconocidos[c].length > 4 ? "…" : "") + ")."));
+      // Los que estaban en el mes anterior (el más nuevo antes de este) y ya no aparecen
+      const previo = Object.keys(MES_DATA).filter(k => k < mes && MES_DATA[k] && (MES_DATA[k].people || []).length).sort().pop();
+      const ids = new Set(gente.map(p => String(p.id)));
+      const seVan = previo ? MES_DATA[previo].people.filter(p => !ids.has(String(p.id))) : [];
+      const idsPrev = previo ? new Set(MES_DATA[previo].people.map(p => String(p.id))) : null;
+      gente.forEach(p => { p.nuevo = idsPrev ? !idsPrev.has(String(p.id)) : p.nuevo; });
+      pdfMes = { mes, grupos: r.grupos, gente };
+      const nomPrev = previo ? mesInfo(previo).nombre.toLowerCase() : "";
+      document.getElementById("pdfTitulo").textContent = mi.nombre.charAt(0) + mi.nombre.slice(1).toLowerCase() + " " + mi.y + " desde el PDF";
+      let h = '<p class="pdf-res"><b>' + gente.length + " personas</b> en " + r.grupos.length + " grupos (" +
+        r.grupos.map(g => g.count).join(" · ") + ").</p>";
+      if (FB_MESES[mes]) avisos.unshift("Ya hay una programación de " + mi.nombre.toLowerCase() + " cargada: si la subís, se reemplaza " +
+        "(se pierde lo publicado a mano en ese mes; lo que cada uno publicó en su fila sigue).");
+      if (avisos.length) h += '<div class="pdf-box pdf-ojo"><h4>⚠ Revisá</h4><ul>' + avisos.map(a => "<li>" + escH(a) + "</li>").join("") + "</ul></div>";
+      const nuevos = gente.filter(p => p.nuevo);
+      if (nuevos.length) h += '<div class="pdf-box pdf-nue"><h4>Nuevos' + (previo ? " (no estaban en " + nomPrev + ")" : "") +
+        ": " + nuevos.length + '</h4><p style="margin:0 0 6px">Así se van a ver en la app. Si querés, corregí el nombre.</p>' +
+        nuevos.map(p => '<div style="margin:3px 0">' + escH(p.id) + ' <input data-pdf-id="' + escH(p.id) + '" value="' + escH(p.name).replace(/"/g, "&quot;") + '"></div>').join("") + "</div>";
+      if (seVan.length) h += '<div class="pdf-box pdf-van"><h4>Ya no están (estaban en ' + nomPrev + "): " + seVan.length + "</h4><ul>" +
+        seVan.map(p => "<li>" + escH(p.id + " " + p.name) + "</li>").join("") +
+        '</ul><p style="margin:6px 0 0">Si alguno tenía el celular registrado, lo podés liberar en Celulares.</p></div>';
+      if (licencias.length) h += '<div class="pdf-box pdf-lic"><h4>Licencias (celdas sin turno en el PDF): ' + licencias.length + "</h4><ul>" +
+        licencias.map(t => "<li>" + escH(t) + "</li>").join("") + "</ul></div>";
+      h += '<div class="pdf-tabla-wrap"><table><thead><tr><th>Legajo</th><th>Nombre</th>';
+      for (let d = 1; d <= mi.days; d++) h += "<th>" + d + "</th>";
+      h += "</tr></thead><tbody>";
+      let pi = 0;
+      r.grupos.forEach(g => {
+        h += '<tr class="pdf-grp"><td colspan="' + (mi.days + 2) + '">' + escH(g.name) + " · " + g.count + "</td></tr>";
+        for (let k = 0; k < g.count; k++, pi++) {
+          const p = gente[pi];
+          h += "<tr" + (p.nuevo ? ' class="pdf-es-nuevo"' : "") + "><td>" + escH(p.id) + '</td><td class="pdf-nom" title="En el PDF: ' + escH(p.pdfNombre) + '">' + escH(p.name) + "</td>";
+          p.codes.forEach(c => {
+            const bg = colorMap[c] || "#fff";
+            h += '<td style="background:' + bg + ";color:" + fgFor(c, bg) + '">' + escH(c) + "</td>";
+          });
+          h += "</tr>";
+        }
+      });
+      h += "</tbody></table></div>";
+      cuerpo.innerHTML = h;
+      btnSubir.disabled = false;
+    }
+    function cerrarPdf() { document.getElementById("pdfOverlay").classList.remove("open"); pdfMes = null; }
+    document.getElementById("btnImportPdf").addEventListener("click", () => {
+      if (currentUser !== "ADMIN") return;
+      if (!fbReady) { alert("Para subir el mes tenés que estar conectado como admin."); return; }
+      document.getElementById("importPdfFile").click();
+    });
+    document.getElementById("importPdfFile").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (file) abrirPdfMes(file);
+    });
+    document.getElementById("closePdf").addEventListener("click", cerrarPdf);
+    document.getElementById("pdfCancelar").addEventListener("click", cerrarPdf);
+    document.getElementById("pdfCuerpo").addEventListener("input", (e) => {
+      const inp = e.target.closest("input[data-pdf-id]");
+      if (!inp || !pdfMes) return;
+      const p = pdfMes.gente.find(x => String(x.id) === inp.dataset.pdfId);
+      if (p) p.name = inp.value.trim().toUpperCase() || p.name;
+    });
+    document.getElementById("pdfSubir").addEventListener("click", () => {
+      if (!pdfMes) return;
+      const m = pdfMes, prev = MES_DATA[m.mes] || {};
+      const codigos = ordenarTurnos(Array.from(new Set(ALL_SHIFT_CODES.concat(...m.gente.map(p => p.codes)))));
+      const data = {
+        mes: m.mes,
+        codigos,
+        feriados: Array.isArray(prev.feriados) ? prev.feriados.slice() : [],
+        grupos: m.grupos.map(g => ({ name: g.name, count: g.count })),
+        people: m.gente.map(p => ({ id: String(p.id), name: p.name, codes: p.codes.slice() }))
+      };
+      cerrarPdf();
+      subirMesAdmin(data);
+    });
     // Colores de un JSON ({"colores": {"F": "#E5E7EB", ...}}): quedan en este dispositivo,
     // como si se eligieran en Colores; para que los vean todos, ⬆ Publicar.
     function cargarColoresJson(cols) {
@@ -8331,7 +8586,7 @@
 
     // Fer, Colores, JSON y Publicar van en la ventana del botón ☰ (en el celular y en la PC).
     (function menuAdmin() {
-      const IDS = ["btnFeriados", "btnColores", "btnExportJson", "btnImportJson", "btnPublish"];
+      const IDS = ["btnFeriados", "btnColores", "btnExportJson", "btnImportJson", "btnImportPdf", "btnPublish"];
       const QUEDA_ABIERTO = ["btnPublish"]; // para ver "Publicando…"
       const overlay = document.getElementById("adminMenuOverlay");
       const lista = document.getElementById("adminMenuList");

@@ -1386,7 +1386,9 @@
     body.is-admin .adm-menu-btn { display: inline-flex; align-items: center; }
     .adm-menu-btn.pending { background: #dc2626; }
     .adm-menu-modal { max-width: 320px; }
-    #adminMenuList { display: flex; flex-direction: column; gap: 8px; }
+    .div-menu-btn { font-size: 0.95rem; padding: 4px 10px; background: #7c3aed; }
+    #adminMenuList, #divMenuList { display: flex; flex-direction: column; gap: 8px; }
+    #divMenuList button { width: 100%; height: auto; margin: 0; padding: 12px; border-radius: 10px; font-size: 0.92rem; font-weight: 700; justify-content: center; gap: 8px; }
     #adminMenuList button {
       width: 100%; height: auto; margin: 0; padding: 12px; border-radius: 10px;
       font-size: 0.92rem; font-weight: 700; justify-content: center; gap: 8px;
@@ -1819,7 +1821,8 @@
         <button type="button" id="btnPedidos" class="json-btn fb-only ped-btn" title="Pedidos de cambio de turno"><span class="ped-txt">Cambios</span><span class="ped-sim" aria-hidden="true">⇄</span></button>
         <button type="button" id="btnCelTop" class="json-btn admin-only cel-top-btn" title="Celulares" aria-label="Celulares">📱</button>
         <button type="button" id="btnOperador" class="json-btn fb-only division-only op-btn" style="display:none"></button>
-        <button type="button" id="btnPublicarDiv" class="json-btn fb-only division-only div-pub-btn" title="División: publicar para todos los turnos que cambiaste">⬆ Publicar</button>
+        <button type="button" id="btnDivMenu" class="json-btn fb-only division-only div-menu-btn" title="Herramientas de la División" aria-label="Herramientas de la División">☰</button>
+        <button type="button" id="btnPublicarDiv" class="json-btn fb-only division-only div-pub-btn" title="División: publicar para todos los turnos, colores y feriados que cambiaste">⬆ Publicar</button>
         <button type="button" id="btnPublish" class="json-btn admin-only fb-only publish-btn" title="Publicar para todos: tus cambios de turnos, colores y feriados">⬆ Publicar</button>
         <button type="button" id="btnAdminMenu" class="json-btn admin-only adm-menu-btn" title="Herramientas de admin" aria-label="Herramientas de admin">☰</button>
         <input id="importJsonFile" type="file" accept="application/json,.json" hidden>
@@ -2142,6 +2145,18 @@
       </div>
       <input id="yoSearch" type="search" placeholder="Buscar apellido o legajo" autocomplete="off">
       <div id="yoList"></div>
+    </div>
+  </div>
+  <div class="palette-overlay" id="divMenuOverlay">
+    <div class="palette-modal adm-menu-modal">
+      <div class="palette-header">
+        <h3>División</h3>
+        <button class="close-btn" id="closeDivMenu" title="Cerrar">×</button>
+      </div>
+      <div id="divMenuList">
+        <button type="button" id="btnFeriadosDiv" class="fer-btn">📅 Feriados</button>
+        <button type="button" id="btnColoresDiv" class="col-btn">🎨 Colores</button>
+      </div>
     </div>
   </div>
   <div class="palette-overlay" id="adminMenuOverlay">
@@ -7158,7 +7173,7 @@
 
     // (Admin) Historial de la División
     let histDocs = [];
-    const HIST_ICONO = { clave: "🔑", entra: "🔓", sale: "🔒", auto: "⏱", autoriza: "✅", pasa: "⬆", palabra: "🗣", rechaza: "✖", publica: "✎", ticket: "🖨" };
+    const HIST_ICONO = { clave: "🔑", entra: "🔓", sale: "🔒", auto: "⏱", autoriza: "✅", pasa: "⬆", palabra: "🗣", rechaza: "✖", publica: "✎", ticket: "🖨", colores: "🎨", feriados: "📅" };
     async function abrirHistorial() {
       const list = document.getElementById("histList"), sel = document.getElementById("histPersona");
       list.innerHTML = '<div class="ped-note info">Cargando…</div>';
@@ -7248,17 +7263,18 @@
     function updateDivPublishBtn() {
       const b = document.getElementById("btnPublicarDiv");
       if (!b || b.disabled) return;
-      const n = soyDivision() && FB_MESES[currentMes] ? turnosAPublicar().cambiados.length : 0;
+      const n = soyDivision() ? (FB_MESES[currentMes] ? turnosAPublicar().cambiados.length : 0) + pendingColors().length + (feriadosPending() ? 1 : 0) : 0;
       // Con cambios queda corto ("⬆ 2"), como el ☰ del admin, para no apretar la barra
       b.textContent = n ? "⬆ " + n : "⬆ Publicar";
-      b.title = n ? "División: publicar para todos " + (n === 1 ? "1 turno cambiado" : n + " turnos cambiados") : "División: publicar para todos los turnos que cambiaste";
+      b.title = n ? "División: publicar para todos " + (n === 1 ? "1 cambio" : n + " cambios") : "División: publicar para todos los turnos, colores y feriados que cambiaste";
       b.classList.toggle("pending", n > 0);
     }
     document.getElementById("btnPublicarDiv").addEventListener("click", async () => {
-      if (!soyDivision() || !fbReady || !FB_MESES[currentMes]) return;
-      const tp = turnosAPublicar();
-      if (!tp.cambiados.length) {
-        showShareToast("No cambiaste turnos. Tocá las celdas, cambialas y después tocá ⬆ Publicar.");
+      if (!soyDivision() || !fbReady) return;
+      const tp = FB_MESES[currentMes] ? turnosAPublicar() : { codes: [], cambiados: [] };
+      const cols = pendingColors(), ferChange = feriadosPending();
+      if (!tp.cambiados.length && !cols.length && !ferChange) {
+        showShareToast("No cambiaste turnos, colores ni feriados. Cambialos y después tocá ⬆ Publicar.");
         return;
       }
       const cambios = tp.cambiados.map(k => {
@@ -7268,17 +7284,33 @@
       }).filter(c => c.pi >= 0).sort((a, b) => a.pi - b.pi || a.di - b.di);
       const lineas = cambios.map(c => "• " + people[c.pi].name + " el " + (c.di + 1) + ": " + (c.antes || "vacío") + " → " + (c.code || "vacío"));
       const choques = choquesConPropios(tp);
-      if (!confirm("¿Publicar para todos?\n\n" + (lineas.length > 15 ? lineas.slice(0, 15).concat("… y " + (lineas.length - 15) + " más") : lineas).join("\n") +
-        "\n\nPasan a la programación oficial." + textoChoques(choques))) return;
+      const txtCols = cols.length ? "Colores: " + cols.map(c => c === "LINEAS" ? "líneas de la grilla" : c).join(", ") : "";
+      const txtFer = ferChange ? "Feriados de " + MES.nombre.toLowerCase() + ": " + (feriados.length ? feriados.map(x => x + 1).join(", ") : "ninguno") : "";
+      const partes = (lineas.length > 15 ? lineas.slice(0, 15).concat("… y " + (lineas.length - 15) + " más") : lineas).slice();
+      if (lineas.length) partes.push("(los turnos pasan a la programación oficial)");
+      if (txtCols) partes.push("• " + txtCols);
+      if (txtFer) partes.push("• " + txtFer);
+      if (!confirm("¿Publicar para todos?\n\n" + partes.join("\n") + textoChoques(choques))) return;
       const b = document.getElementById("btnPublicarDiv");
       b.disabled = true; b.textContent = "Publicando…";
       try {
-        await publicarCeldas(cambios, false);
-        regDiv("publica", "Publicó a mano: " + lineas.map(x => x.replace(/^• /, "")).join("; "));
-        choques.forEach(x => descartarPropio(currentMes, x.id, x.di));
+        if (cambios.length) {
+          await publicarCeldas(cambios, false);
+          regDiv("publica", "Publicó a mano: " + lineas.map(x => x.replace(/^• /, "")).join("; "));
+          choques.forEach(x => descartarPropio(currentMes, x.id, x.di));
+        }
+        if (cols.length || ferChange) {
+          await fbDb.collection(FB_COLLECTION).doc(currentMes).set({ mes: currentMes, version: Date.now(),
+            colores: Object.assign({}, colorMap), letras: Object.assign({}, textMap), feriados: feriados.map(d => d + 1) });
+          colorOverrides = {}; saveColorOverrides();
+          letrasOverrides = {}; saveLetrasOverrides();
+          if (txtCols) regDiv("colores", "Cambió " + txtCols.charAt(0).toLowerCase() + txtCols.slice(1));
+          if (txtFer) regDiv("feriados", "Marcó " + txtFer.charAt(0).toLowerCase() + txtFer.slice(1));
+        }
         b.disabled = false; b.textContent = "✓ Publicado"; b.classList.remove("pending");
         setTimeout(updateDivPublishBtn, 2000);
-        showShareToast("Listo: " + (cambios.length === 1 ? "1 turno pasó" : cambios.length + " turnos pasaron") + " a lo oficial.");
+        showShareToast("Listo: " + [cambios.length ? (cambios.length === 1 ? "1 turno pasó" : cambios.length + " turnos pasaron") + " a lo oficial" : "",
+          cols.length ? "colores publicados" : "", ferChange ? "feriados publicados" : ""].filter(Boolean).join(", ") + ".");
       } catch (err) {
         b.disabled = false; updateDivPublishBtn();
         errDivision(err, "publicar");
@@ -8254,8 +8286,10 @@
       renderColorEditor();
       updatePublishBtn();
     }
+    // Colores y feriados: el admin y la División
+    function puedeColores() { return currentUser === "ADMIN" || soyDivision(); }
     function setCodeColor(code, hex) {
-      if (currentUser !== "ADMIN" || !code) return;
+      if (!puedeColores() || !code) return;
       hex = toHex6(hex);
       colorOverrides[code] = hex;
       colorMap[code] = hex;
@@ -8266,7 +8300,7 @@
       if (colorEditCode) setCodeColor(colorEditCode, e.target.value);
     });
     function setCodeTextColor(code, hex) {
-      if (currentUser !== "ADMIN" || !code) return;
+      if (!puedeColores() || !code) return;
       if (hex) {
         hex = toHex6(hex);
         letrasOverrides[code] = hex;
@@ -8299,7 +8333,7 @@
       refreshColorsEverywhere();
     });
     function openColors() {
-      if (currentUser !== "ADMIN") return;
+      if (!puedeColores()) return;
       colorEditCode = null;
       renderColorCodes();
       renderColorEditor();
@@ -8307,8 +8341,9 @@
     }
     function closeColors() { colorsOverlay.classList.remove("open"); }
     document.getElementById("btnColores").addEventListener("click", openColors);
+    document.getElementById("btnColoresDiv").addEventListener("click", openColors);
     document.querySelectorAll("[data-lineas]").forEach(b => b.addEventListener("click", () => {
-      if (currentUser !== "ADMIN") return;
+      if (!puedeColores()) return;
       const v = b.dataset.lineas === "oscuro" ? LINEAS_OSCURO : LINEAS_CLARO;
       colorMap.LINEAS = v;
       colorOverrides.LINEAS = v;
@@ -8332,13 +8367,22 @@
       grid.innerHTML = html;
     }
     function openFeriados() {
-      if (currentUser !== "ADMIN") return;
+      if (!puedeColores()) return;
       renderFeriadosGrid();
       document.getElementById("feriadosOverlay").classList.add("open");
     }
     document.getElementById("btnFeriados").addEventListener("click", openFeriados);
+    document.getElementById("btnFeriadosDiv").addEventListener("click", openFeriados);
 
     // Fer, Colores, JSON y Publicar van en la ventana del botón ☰ (en el celular y en la PC).
+    // Menú ☰ de la División (Feriados y Colores; acá se suman otras herramientas)
+    (function menuDivision() {
+      const overlay = document.getElementById("divMenuOverlay");
+      const cerrar = () => overlay.classList.remove("open");
+      document.getElementById("btnDivMenu").addEventListener("click", () => overlay.classList.add("open"));
+      document.getElementById("closeDivMenu").addEventListener("click", cerrar);
+      overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target.closest("#divMenuList button")) cerrar(); });
+    })();
     (function menuAdmin() {
       const IDS = ["btnFeriados", "btnColores", "btnExportJson", "btnImportJson", "btnPublish"];
       const QUEDA_ABIERTO = ["btnPublish"]; // para ver "Publicando…"
@@ -8367,7 +8411,7 @@
     });
     document.getElementById("feriadosGrid").addEventListener("click", (e) => {
       const btn = e.target.closest(".fer-day[data-di]");
-      if (!btn) return;
+      if (!btn || !puedeColores()) return;
       const di = Number(btn.dataset.di);
       const i = feriados.indexOf(di);
       if (i >= 0) feriados.splice(i, 1);
@@ -8380,6 +8424,7 @@
       if (personOverlay.classList.contains("open") && currentCalPi !== null) openPersonCalendar(currentCalPi);
     });
     document.getElementById("clearFeriados").addEventListener("click", () => {
+      if (!puedeColores()) return;
       feriados = [];
       saveFeriados();
       renderFeriadosGrid();

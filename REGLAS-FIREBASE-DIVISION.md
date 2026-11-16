@@ -4,7 +4,8 @@ La **División** es un rol intermedio entre el admin y los usuarios. El admin la
 Celulares ("Hacer División"), que guarda `division_cajeros/{legajo o inv-código}`.
 La División puede autorizar pedidos sin contraparte, pasar acordados a lo oficial y publicar
 cambios de turnos. Solo cambia **turnos** del mes (`people`, `changedAt`, `publicadoPor`,
-`version`): no puede tocar la gente, la inicial, colores ni nada más.
+`version`): no puede tocar la gente ni la inicial. También puede cambiar los **colores, letras y feriados** del mes
+(colección `cajeros`), igual que el admin.
 
 Agregar a las reglas (dentro de `match /databases/{database}/documents`):
 
@@ -44,6 +45,16 @@ Y cambiar estos dos bloques que ya existen:
       );
       allow update: if esDivision();
       allow delete: if esAdmin();
+    }
+```
+
+Y en el bloque de colores y feriados (que ya existe), dejar que también escriba la División:
+
+```
+    match /cajeros/{mes} {
+      allow read: if true;
+      allow write: if (esAdmin() || esDivision())
+                   && request.resource.data.keys().hasOnly(['mes', 'version', 'colores', 'feriados', 'letras' ]);
     }
 ```
 

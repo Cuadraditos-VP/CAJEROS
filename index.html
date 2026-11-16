@@ -1197,34 +1197,18 @@
       border-color: transparent #9333ea transparent transparent;
       pointer-events: none; z-index: 3;
     }
-    /* Titilar fuerte solo al editar (borde grueso + glow) */
-    @keyframes titilar {
-      0%, 100% {
-        opacity: 0;
-        border-color: transparent;
-        box-shadow: none;
-      }
-      50% {
-        opacity: 1;
-        border-color: #b45309;
-        box-shadow:
-          0 0 0 3px #b45309,
-          0 0 14px 4px rgba(180, 83, 9, 0.85);
-      }
+    /* Día de hoy en el almanaque individual: titila para encontrarlo rápido */
+    @keyframes hoyTitila {
+      0%, 100% { outline-color: #0f766e; }
+      50% { outline-color: transparent; }
     }
-    td.edited::after, .cal-day.edited::after, .cal-day-h.edited::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border: 3px solid transparent;
-      box-sizing: border-box;
-      animation: titilar 0.85s ease-in-out 3;
-      animation-fill-mode: forwards;
-      pointer-events: none;
-      z-index: 2;
+    .cal-day.hoy-cal, .cal-day-h.hoy-cal {
+      outline: 4px solid #0f766e;
+      outline-offset: -4px;
+      animation: hoyTitila 1s ease-in-out infinite;
     }
     @media (prefers-reduced-motion: reduce) {
-      td.edited::after, .cal-day.edited::after, .cal-day-h.edited::after { animation: none; }
+      .cal-day.hoy-cal, .cal-day-h.hoy-cal { animation: none; }
     }
 
     /* Ocultar columna de nombre (solo legajo) */
@@ -7872,7 +7856,7 @@
         const dotG = cmtG ? '<span class="comment-dot"></span>' : "";
         const pendingG = shiftOverlay.classList.contains("open") && shiftPersonIdx === pi && shiftDayIdx === d ? " pending-shift" : "";
         const nextG = (d + 1) > 25 ? " ot-next" : "";
-        gridHtml += `<div class="cal-day${edited ? " " + edited : ""}${hasC}${pendingG}${nextG}" data-pi="${pi}" data-di="${d}" style="background:${bg};color:${fg}" title="${titleG}">
+        gridHtml += `<div class="cal-day${d === diaHoy() ? " hoy-cal" : ""}${edited ? " " + edited : ""}${hasC}${pendingG}${nextG}" data-pi="${pi}" data-di="${d}" style="background:${bg};color:${fg}" title="${titleG}">
           <span class="cal-num">${d + 1}</span>
           <span class="cal-code">${code || "·"}</span>${dotG}
         </div>`;
@@ -7893,7 +7877,7 @@
         const dotH = cmtH ? '<span class="comment-dot"></span>' : "";
         const pendingH = shiftOverlay.classList.contains("open") && shiftPersonIdx === pi && shiftDayIdx === d ? " pending-shift" : "";
         const nextH = (d + 1) > 25 ? " ot-next" : "";
-        rowHtml += `<div class="cal-day-h${edited ? " " + edited : ""}${hasCH}${pendingH}${nextH}" data-pi="${pi}" data-di="${d}" style="background:${bg};color:${fg}" title="${titleH}">
+        rowHtml += `<div class="cal-day-h${d === diaHoy() ? " hoy-cal" : ""}${edited ? " " + edited : ""}${hasCH}${pendingH}${nextH}" data-pi="${pi}" data-di="${d}" style="background:${bg};color:${fg}" title="${titleH}">
           <span class="cal-wd-h">${wd}</span>
           <span class="cal-num-h">${d + 1}</span>
           <span class="cal-code-h">${code || "·"}</span>${dotH}

@@ -200,6 +200,8 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   El nombre igual se guarda en Firebase (`por`, `pasadoPor`, `rechazo.por`, `publicadoPor`, historial).
   **Lo avalado NO queda trabado** (a pedido de Guillermo, se sacó la traba): el dueño puede cambiar su turno, pedir
   cambio y responder "Me sirve" con las reglas de siempre, y la app no le menciona a la División.
+  **Horas extra** (solo cajeros): en el almanaque de cada uno las ve esa persona, el admin y la División (`renderOtSummary`,
+  a pedido de Guillermo).
 - **Uso de la app** (en Celulares, solo el admin): cada celular registrado suma 1 en su doc de `yo_*` (`ab`, y `ult` =
   última vez, y `disp` = aparato al día, para ver "(app)" aunque se haya registrado antes) al abrir la app o al volver a ella tras 30 min sin usarla (`contarApertura`); la recarga automática
   no cuenta (`sessionStorage` `recargaAuto`) y el admin no suma. "Sin usarla" se mide con la última vez que se la vio

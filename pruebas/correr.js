@@ -883,6 +883,7 @@ function chequear(nombre, cond, detalle) {
         r.mano = !!document.querySelector("#pedidoBody .ped-mano"); closePedido(); return r; }, [s, d6]);
       chequear("los demás ven la propuesta en la grilla y al tocarla se abre el pedido (con \"Cambiar a mano\")",
         enBPed.cls && enBPed.cuadro && !enBPed.picker && enBPed.mano, enBPed);
+      if (typeof otVe === "function") chequear("la División ve las horas extra de cualquiera", await otVe(D, s.a));
       const caja = await D.evaluate(([s, d6]) => { openPedido(s.a, d6); const b = document.querySelector("#pedidoBody .ped-div button");
         return b ? b.textContent : ""; }, [s, d6]);
       chequear("en el pedido de A la División ve \"Autorizar\"", /Autorizar/.test(caja) && caja.indexOf(quiere) >= 0, caja);

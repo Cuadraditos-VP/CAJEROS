@@ -8075,8 +8075,8 @@
     function renderOtSummary(pi) {
       const el = document.getElementById("personOtSummary");
       if (!el) return;
-      // Las horas extra de cada uno solo las ve él mismo (y el admin), a pedido de Guillermo
-      const puedeVerOt = currentUser === "ADMIN" || (people[pi] && esMiFila(people[pi]));
+      // Las horas extra de cada uno solo las ve él mismo, el admin y la División (a pedido de Guillermo)
+      const puedeVerOt = currentUser === "ADMIN" || soyDivision() || (people[pi] && esMiFila(people[pi]));
       el.style.display = puedeVerOt ? "" : "none";
       if (!puedeVerOt) { el.innerHTML = ""; return; }
       const id = people[pi] ? people[pi].id : "";

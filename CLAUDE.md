@@ -105,7 +105,10 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   `ABRIR_ALMANAQUE_AL_INICIO = false`).
   Tras la recarga automática de 20 min vuelve a donde estaba (`recargaAutomatica` / `volverAPosicion`).
   Si no (al abrir), la grilla se corre para dejar **hoy en el medio** y esa columna titila dos veces (`centrarHoyEnGrilla`, `hoy-col`).
+  También al volver a la app tras 30 min sin usarla, si no hay ninguna ventana abierta (`centrarAlVolver`, desde `revisarUso`).
   En el almanaque individual, hoy tiene borde verde y titila dos veces solo al abrirlo (`hoy-cal`, `hoy-titila`).
+- **Pedir cambio desde el cuadro del turno**: al tocar un turno propio (no pasado, no LIC) aparece arriba "⇄ Pedir cambio el N"
+  (o "Ver mi pedido…"), que abre `openPedido` de ese día (`shiftPedir`).
 - Arriba: solo el selector de mes (el título solo si hay un único mes) y un botón con el
   apellido del usuario (`btnMiAlmanaque`) que abre su almanaque; el admin no lo ve.
 - **Buscador de nombres** (solo cajeros, a pedido de Guillermo): arriba a la izquierda, en la fila del título y sobre la

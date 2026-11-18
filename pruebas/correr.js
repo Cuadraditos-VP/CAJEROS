@@ -1326,7 +1326,7 @@ function chequear(nombre, cond, detalle) {
       chequear("con 🎉 del admin le sale la felicitación al abrir la app", (await festejo()).abierto, be.st[YOC]["uC"]);
       const txtAdm = await C.evaluate(() => ({ txt: document.getElementById("festejoTxt").textContent,
         num: getComputedStyle(document.querySelector("#festejo .festejo-num")).display }));
-      chequear("y dice \"Gracias por tus colaboraciones\" (sin hablar de los 100 usos)", txtAdm.txt === "Gracias por tus colaboraciones" && txtAdm.num === "none", txtAdm);
+      chequear("y dice \"Gracias por usar la app y ayudar a mejorarla.\" (sin hablar de los 100 usos)", txtAdm.txt === "Gracias por usar la app y ayudar a mejorarla." && txtAdm.num === "none", txtAdm);
       await C.evaluate(() => document.getElementById("festejoOk").click()); await wait(800);
       await C.reload(); await wait(2500);
       chequear("y después de verla no se repite", !(await festejo()).abierto && !be.st[YOC]["uC"].festPend, be.st[YOC]["uC"]);

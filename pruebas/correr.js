@@ -1312,17 +1312,21 @@ function chequear(nombre, cond, detalle) {
       await C.reload(); await wait(2500);
       chequear("y no se repite la próxima vez que abre la app", !(await festejo()).abierto && abC() === 101, { ab: abC() });
       // Si el admin le corrige los usos a menos de 100 (✎), al llegar de nuevo vuelve a festejar (caso Sanchez)
-      be.st[YOC]["uC"].ab = 99; be.st[YOC]["uC"].festReset = Date.now() + 1000;
-      await wait(1100);
+      be.st[YOC]["uC"].ab = 99; be.st[YOC]["uC"].festOtra = true;
       await C.reload(); await wait(2500);
       chequear("si el admin le corrige los usos, al llegar a 100 vuelve a festejar", (await festejo()).abierto && abC() === 100, { ab: abC() });
       // Si se recarga antes de tocar el botón (no la vio), vuelve a salir
-      be.st[YOC]["uC"].ab = 99; be.st[YOC]["uC"].festReset = Date.now() + 1000;
-      await wait(1100);
-      await C.reload(); await wait(2500);
       await C.reload(); await wait(2500);
       chequear("si se recargó antes de tocar el botón, la felicitación vuelve a salir", (await festejo()).abierto, { ab: abC() });
-      await C.evaluate(() => document.getElementById("festejoOk").click());
+      await C.evaluate(() => document.getElementById("festejoOk").click()); await wait(800);
+      chequear("al tocar el botón se borra la marca del admin", !be.st[YOC]["uC"].festOtra, be.st[YOC]["uC"]);
+      // 🎉 del admin: le sale la próxima vez que abre la app, aunque ya haya pasado los 100
+      be.st[YOC]["uC"].festPend = true;
+      await C.reload(); await wait(2500);
+      chequear("con 🎉 del admin le sale la felicitación al abrir la app", (await festejo()).abierto, be.st[YOC]["uC"]);
+      await C.evaluate(() => document.getElementById("festejoOk").click()); await wait(800);
+      await C.reload(); await wait(2500);
+      chequear("y después de verla no se repite", !(await festejo()).abierto && !be.st[YOC]["uC"].festPend, be.st[YOC]["uC"]);
     }
     const usoAd = await AD.evaluate(id => {
       renderCelulares();

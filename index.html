@@ -6049,10 +6049,14 @@
     const FESTEJO_USOS = 100;
     function festejoKey() { return PROP_PREF + "Festejo" + FESTEJO_USOS + ":" + miLegajo; }
     function revisarFestejo100(d) {
-      if (!d || !miLegajo || currentUser === "ADMIN" || (Number(d.ab) || 0) < FESTEJO_USOS) return;
+      if (!d || !miLegajo || currentUser === "ADMIN") return;
       if (document.getElementById("festejo").classList.contains("open")) return;
-      // Ya lo vio (tocó el botón), salvo que el admin le haya corregido los usos a menos de 100 después (festReset; caso Sanchez)
-      try { const visto = Number(localStorage.getItem(festejoKey())) || 0; if (visto && !(Number(d.festReset) > visto)) return; } catch (e) { return; }
+      // Sale si llegó a 100 y no la vio (tocó el botón) en este celular, o si el admin le corrigió los usos a menos
+      // de 100 (festOtra), o si el admin tocó 🎉 en Celulares (festPend). Las dos marcas se borran al tocar el botón (caso Sanchez).
+      let visto = "";
+      try { visto = localStorage.getItem(festejoKey()) || ""; } catch (e) {}
+      const llego = (Number(d.ab) || 0) >= FESTEJO_USOS && (!visto || !!d.festOtra);
+      if (!llego && !d.festPend) return;
       const me = miPersona();
       const nom = String((me && me.p.name) || d.name || "");
       const pila = (nom.split(",")[1] || "").trim().split(/\s+/)[0]; // solo el nombre de pila: si no está, sin nombre (no "¡Felicitaciones, Redruello!")
@@ -6088,6 +6092,8 @@
       ov.querySelectorAll(".estrella").forEach(e => e.remove());
       // Recién acá queda como visto (si una recarga la tapaba antes de verla, se perdía)
       try { if (miLegajo) localStorage.setItem(festejoKey(), String(Date.now())); } catch (e) {}
+      if (fbReady && yoUid && miLegajo) fbDb.collection(YO_COLLECTION).doc(yoUid)
+        .update({ festPend: firebase.firestore.FieldValue.delete(), festOtra: firebase.firestore.FieldValue.delete() }).catch(() => {});
     });
     function startYoSync(u) {
       if (!fbReady || !u || u.uid === yoUid) return;
@@ -6272,12 +6278,25 @@
           if (r === null) return;
           const n = Math.floor(Number(String(r).trim()));
           if (String(r).trim() === "" || !(n >= 0)) { alert("Escribí un número."); return; }
-          // Si queda en menos de 100, puede volver a festejar al llegar (festReset)
-          fbDb.collection(YO_COLLECTION).doc(k).update(n < FESTEJO_USOS ? { ab: n, festReset: Date.now() } : { ab: n })
+          // Si queda en menos de 100, puede volver a festejar al llegar (festOtra)
+          fbDb.collection(YO_COLLECTION).doc(k).update(n < FESTEJO_USOS ? { ab: n, festOtra: true } : { ab: n })
             .then(() => showShareToast("Listo: " + d.name + " queda con " + n + (n === 1 ? " uso." : " usos.")))
             .catch(err => showShareToast("No se pudo cambiar: " + (err && err.code === "permission-denied" ? "Firebase no lo deja (faltan las reglas nuevas)." : "revisá la conexión.")));
         });
         row.querySelector(".cel-uso").appendChild(bab);
+        // 🎉 Mostrarle la felicitación la próxima vez que abra la app (sin que tenga que hacer nada)
+        const bfe = document.createElement("button");
+        bfe.type = "button"; bfe.className = "cel-festejar"; bfe.textContent = d.festPend ? "🎉 pendiente" : "🎉";
+        bfe.title = d.festPend ? "La felicitación le sale la próxima vez que abra la app" : "Mostrarle la felicitación";
+        bfe.style.cssText = "margin-left:4px;border:none;background:none;cursor:pointer;font-size:0.8rem;padding:0 4px;color:#a16207";
+        bfe.addEventListener("click", () => {
+          if (d.festPend) { showShareToast("Ya está: le sale la próxima vez que abra la app."); return; }
+          if (!confirm("¿Mostrarle la felicitación a " + d.name + " la próxima vez que abra la app?")) return;
+          fbDb.collection(YO_COLLECTION).doc(k).update({ festPend: true })
+            .then(() => showShareToast("Listo: a " + d.name + " le sale la felicitación la próxima vez que abra la app."))
+            .catch(err => showShareToast("No se pudo: " + (err && err.code === "permission-denied" ? "Firebase no lo deja." : "revisá la conexión.")));
+        });
+        row.querySelector(".cel-uso").appendChild(bfe);
         const b = document.createElement("button");
         b.type = "button"; b.className = "ped-act"; b.textContent = "Liberar";
         b.addEventListener("click", () => {

@@ -6067,7 +6067,7 @@
       const ov = document.getElementById("festejo");
       if (!ov) return;
       document.getElementById("festejoTit").textContent = "¡Felicitaciones" + (nombre ? ", " + nombre : "") + "!";
-      document.getElementById("festejoTxt").textContent = delAdmin ? "Gracias por tus colaboraciones" : "Llegaste a los 100 usos de la app. ¡Gracias por usarla!";
+      document.getElementById("festejoTxt").textContent = delAdmin ? "Gracias por usar la app y ayudar a mejorarla." : "Llegaste a los 100 usos de la app. ¡Gracias por usarla!";
       ov.querySelector(".festejo-num").style.display = delAdmin ? "none" : "";
       ov.querySelectorAll(".estrella").forEach(e => e.remove());
       const pocas = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;

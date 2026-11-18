@@ -6060,13 +6060,15 @@
       const me = miPersona();
       const nom = String((me && me.p.name) || d.name || "");
       const pila = (nom.split(",")[1] || "").trim().split(/\s+/)[0]; // solo el nombre de pila: si no está, sin nombre (no "¡Felicitaciones, Redruello!")
-      festejar(pila ? pila.charAt(0).toUpperCase() + pila.slice(1).toLowerCase() : "");
+      // La que manda el admin con 🎉 no habla de los 100 usos (a pedido de Guillermo)
+      festejar(pila ? pila.charAt(0).toUpperCase() + pila.slice(1).toLowerCase() : "", !!d.festPend);
     }
-    function festejar(nombre) {
+    function festejar(nombre, delAdmin) {
       const ov = document.getElementById("festejo");
       if (!ov) return;
       document.getElementById("festejoTit").textContent = "¡Felicitaciones" + (nombre ? ", " + nombre : "") + "!";
-      document.getElementById("festejoTxt").textContent = "Llegaste a los 100 usos de la app. ¡Gracias por usarla!";
+      document.getElementById("festejoTxt").textContent = delAdmin ? "Gracias por tus colaboraciones" : "Llegaste a los 100 usos de la app. ¡Gracias por usarla!";
+      ov.querySelector(".festejo-num").style.display = delAdmin ? "none" : "";
       ov.querySelectorAll(".estrella").forEach(e => e.remove());
       const pocas = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
       const figuras = ["⭐", "🌟", "✨", "⭐", "💫"];

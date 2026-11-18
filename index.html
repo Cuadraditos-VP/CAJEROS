@@ -6050,7 +6050,9 @@
     function festejoKey() { return PROP_PREF + "Festejo" + FESTEJO_USOS + ":" + miLegajo; }
     function revisarFestejo100(d) {
       if (!d || !miLegajo || currentUser === "ADMIN" || (Number(d.ab) || 0) < FESTEJO_USOS) return;
-      try { if (localStorage.getItem(festejoKey())) return; localStorage.setItem(festejoKey(), String(Date.now())); } catch (e) { return; }
+      if (document.getElementById("festejo").classList.contains("open")) return;
+      // Ya lo vio (tocó el botón), salvo que el admin le haya corregido los usos a menos de 100 después (festReset; caso Sanchez)
+      try { const visto = Number(localStorage.getItem(festejoKey())) || 0; if (visto && !(Number(d.festReset) > visto)) return; } catch (e) { return; }
       const me = miPersona();
       const nom = String((me && me.p.name) || d.name || "");
       const pila = (nom.split(",")[1] || "").trim().split(/\s+/)[0]; // solo el nombre de pila: si no está, sin nombre (no "¡Felicitaciones, Redruello!")
@@ -6084,6 +6086,8 @@
       const ov = document.getElementById("festejo");
       ov.classList.remove("open");
       ov.querySelectorAll(".estrella").forEach(e => e.remove());
+      // Recién acá queda como visto (si una recarga la tapaba antes de verla, se perdía)
+      try { if (miLegajo) localStorage.setItem(festejoKey(), String(Date.now())); } catch (e) {}
     });
     function startYoSync(u) {
       if (!fbReady || !u || u.uid === yoUid) return;
@@ -6268,7 +6272,8 @@
           if (r === null) return;
           const n = Math.floor(Number(String(r).trim()));
           if (String(r).trim() === "" || !(n >= 0)) { alert("Escribí un número."); return; }
-          fbDb.collection(YO_COLLECTION).doc(k).update({ ab: n })
+          // Si queda en menos de 100, puede volver a festejar al llegar (festReset)
+          fbDb.collection(YO_COLLECTION).doc(k).update(n < FESTEJO_USOS ? { ab: n, festReset: Date.now() } : { ab: n })
             .then(() => showShareToast("Listo: " + d.name + " queda con " + n + (n === 1 ? " uso." : " usos.")))
             .catch(err => showShareToast("No se pudo cambiar: " + (err && err.code === "permission-denied" ? "Firebase no lo deja (faltan las reglas nuevas)." : "revisá la conexión.")));
         });
@@ -6509,7 +6514,7 @@
     // Antes de recargar se guarda dónde estaba la grilla, para volver ahí (no a tu grupo)
     function recargaAutomatica() {
       if (document.hidden) return; // guardada: no se recarga (ahorra lecturas de Firebase); se recarga en la próxima vuelta con la app a la vista
-      const openOverlay = document.querySelector(".palette-overlay.open:not(#opOverlay):not(#opNuevaOverlay), #loginOverlay.open");
+      const openOverlay = document.querySelector(".palette-overlay.open:not(#opOverlay):not(#opNuevaOverlay), #loginOverlay.open, #festejo.open");
       if (openOverlay) return;
       try {
         const w = document.getElementById("scheduleWrap");

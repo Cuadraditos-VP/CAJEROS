@@ -1311,6 +1311,18 @@ function chequear(nombre, cond, detalle) {
       chequear("el botón lo cierra", !(await festejo()).abierto);
       await C.reload(); await wait(2500);
       chequear("y no se repite la próxima vez que abre la app", !(await festejo()).abierto && abC() === 101, { ab: abC() });
+      // Si el admin le corrige los usos a menos de 100 (✎), al llegar de nuevo vuelve a festejar (caso Sanchez)
+      be.st[YOC]["uC"].ab = 99; be.st[YOC]["uC"].festReset = Date.now() + 1000;
+      await wait(1100);
+      await C.reload(); await wait(2500);
+      chequear("si el admin le corrige los usos, al llegar a 100 vuelve a festejar", (await festejo()).abierto && abC() === 100, { ab: abC() });
+      // Si se recarga antes de tocar el botón (no la vio), vuelve a salir
+      be.st[YOC]["uC"].ab = 99; be.st[YOC]["uC"].festReset = Date.now() + 1000;
+      await wait(1100);
+      await C.reload(); await wait(2500);
+      await C.reload(); await wait(2500);
+      chequear("si se recargó antes de tocar el botón, la felicitación vuelve a salir", (await festejo()).abierto, { ab: abC() });
+      await C.evaluate(() => document.getElementById("festejoOk").click());
     }
     const usoAd = await AD.evaluate(id => {
       renderCelulares();

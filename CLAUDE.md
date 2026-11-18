@@ -223,7 +223,7 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   **Los usos viajan** (caso Sanchez, a pedido de Guillermo): al "Pasar a este celular" el admin no borra el pedido sino que le saca
   `pide` y le suma el `ab` del celular viejo (`pasarLegajo`; los `yo_*` sin `id` ni `pide` no se listan); con "📲 Pasar a la app" van
   en el código (`pases_*.ab`, `miAb`, `sumarUsosTraidos`). El admin los corrige a mano con ✎ (`cel-ab-edit`). Reglas: `REGLAS-FIREBASE-USOS.md`.
-- **Festejo de los 100 usos** (solo cajeros, a pedido de Guillermo; en jefes NO): cuando el `ab` de su doc de `yo_*` llega a 100, ese celular muestra una lluvia de estrellas y "¡Felicitaciones, Nombre!" (`revisarFestejo100`, `festejar`, `#festejo`). Una sola vez por legajo en ese celular (`localStorage` `<PROP_PREF>Festejo100:<legajo>`). El admin no.
+- **Festejo de los 100 usos** (solo cajeros, a pedido de Guillermo; en jefes NO): cuando el `ab` de su doc de `yo_*` llega a 100, ese celular muestra una lluvia de estrellas y "¡Felicitaciones, Nombre!" (`revisarFestejo100`, `festejar`, `#festejo`). Una sola vez por legajo en ese celular (`localStorage` `<PROP_PREF>Festejo100:<legajo>`, se anota recién al tocar el botón; la recarga automática espera si está abierto). Si el admin le corrige los usos con ✎ a menos de 100 se anota `festReset` en su `yo_*` y vuelve a festejar al llegar (caso Sanchez). El admin no.
 - **Licencia (LIC)**: no lleva texto (solo el color; el selector de turnos sí dice LIC). Los días de
   licencia no se pueden cambiar ni pedir (`esLicencia` en `puedeEditar`): solo el admin los puede corregir.
 

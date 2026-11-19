@@ -1984,12 +1984,10 @@
         <h3 id="personCalTitle">—</h3>
         <div style="display:flex; gap:6px;">
           <button type="button" class="close-btn share-btn" id="btnShareCal" title="Compartir" aria-label="Compartir"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 13.3l7.4 4.4M15.7 6.3l-7.4 4.4"/></svg></button>
-          <button type="button" class="close-btn" id="btnToggleCalView" title="Ver horizontal">↔</button>
           <button class="close-btn" id="closePersonCal" title="Cerrar">×</button>
         </div>
       </div>
       <div class="cal-grid" id="personCalGrid"></div>
-      <div class="cal-row" id="personCalRow"></div>
       <div id="personOtSummary" class="ot-summary"></div>
     </div>
   </div>
@@ -8462,22 +8460,12 @@
     const personOverlay = document.getElementById("personOverlay");
     const personCalTitle = document.getElementById("personCalTitle");
     const personCalGrid = document.getElementById("personCalGrid");
-    const personCalRow = document.getElementById("personCalRow");
-    const btnToggleCalView = document.getElementById("btnToggleCalView");
 
-    let calViewMode = "grid"; // "grid" (almanaque) u "horizontal" (fila única)
-    try { calViewMode = localStorage.getItem("cajerosCalView") || "grid"; } catch (e) {}
+    // La vista "a lo ancho" del almanaque se sacó (a pedido de Guillermo): se borra lo que quedó guardado
+    try { localStorage.removeItem("cajerosCalView"); } catch (e) {}
 
     let currentCalPi = null;
 
-    function applyCalViewMode() {
-      const isRow = calViewMode === "horizontal";
-      personCalGrid.style.display = isRow ? "none" : "grid";
-      personCalRow.classList.toggle("open", isRow);
-      document.querySelector(".person-cal-modal").classList.toggle("wide", isRow);
-      btnToggleCalView.textContent = isRow ? "▦" : "↔";
-      btnToggleCalView.title = isRow ? "Ver como almanaque" : "Ver horizontal";
-    }
 
     const btnShareCal = document.getElementById("btnShareCal");
     function openPersonCalendar(pi) {
@@ -8511,36 +8499,10 @@
       }
       personCalGrid.innerHTML = gridHtml;
 
-      // Vista horizontal (una fila con todos los días, para leer el mes de corrido)
-      let rowHtml = "";
-      for (let d = 0; d < DAYS; d++) {
-        const code = codesArr[d] || "";
-        const bg = code ? (colorMap[code] || "#e2e8f0") : "#f8fafc";
-        const fg = code ? fgFor(code, bg) : "#94a3b8";
-        const edited = marcaCal(pi, d);
-        const wd = WEEKDAY_ABBR[(MES.startWd + d) % 7];
-        const cmtH = getComment(pi, d);
-        const hasCH = cmtH ? " has-comment" : "";
-        const titleH = cmtH ? cmtH.replace(/"/g, "&quot;") : "";
-        const dotH = cmtH ? '<span class="comment-dot"></span>' : "";
-        const pendingH = shiftOverlay.classList.contains("open") && shiftPersonIdx === pi && shiftDayIdx === d ? " pending-shift" : "";
-        const nextH = (d + 1) > 25 ? " ot-next" : "";
-        rowHtml += `<div class="cal-day-h${d === diaHoy() ? hoyCls : ""}${edited ? " " + edited : ""}${hasCH}${pendingH}${nextH}" data-pi="${pi}" data-di="${d}" style="background:${bg};color:${fg}" title="${titleH}">
-          <span class="cal-wd-h">${wd}</span>
-          <span class="cal-num-h">${d + 1}</span>
-          <span class="cal-code-h">${code || "·"}</span>${dotH}
-        </div>`;
-      }
-      personCalRow.innerHTML = rowHtml;
-
       personCalGrid.querySelectorAll(".cal-day[data-pi][data-di]").forEach(el => {
         markComment(el, Number(el.dataset.pi), Number(el.dataset.di));
       });
-      personCalRow.querySelectorAll(".cal-day-h[data-pi][data-di]").forEach(el => {
-        markComment(el, Number(el.dataset.pi), Number(el.dataset.di));
-      });
 
-      applyCalViewMode();
       renderOtSummary(pi);
       personOverlay.classList.add("open");
     }
@@ -8611,22 +8573,12 @@
       personOverlay.classList.remove("open");
       calModoPedir = false;
     }
-    btnToggleCalView.addEventListener("click", () => {
-      calViewMode = calViewMode === "horizontal" ? "grid" : "horizontal";
-      try { localStorage.setItem("cajerosCalView", calViewMode); } catch (e) {}
-      applyCalViewMode();
-    });
     document.getElementById("closePersonCal").addEventListener("click", closePersonCalendar);
     personOverlay.addEventListener("click", (e) => {
       if (e.target === personOverlay) closePersonCalendar();
     });
     personCalGrid.addEventListener("click", (e) => {
       const cell = e.target.closest(".cal-day[data-di]");
-      if (!cell || (viewMode !== "actual" && viewMode !== "division")) return;
-      openShiftPicker(Number(cell.dataset.pi), Number(cell.dataset.di));
-    });
-    personCalRow.addEventListener("click", (e) => {
-      const cell = e.target.closest(".cal-day-h[data-di]");
       if (!cell || (viewMode !== "actual" && viewMode !== "division")) return;
       openShiftPicker(Number(cell.dataset.pi), Number(cell.dataset.di));
     });
@@ -8653,7 +8605,7 @@
     function drawCalendarCanvas(pi) {
       const person = people[pi];
       const codesArr = codesFor(pi);
-      const isRow = calViewMode === "horizontal";
+      const isRow = false; // siempre como almanaque (la vista a lo ancho se sacó)
       const S = 2;                       // escala para que se vea nítida
       const FONT = "'Segoe UI', system-ui, -apple-system, sans-serif";
       const PAD = 20, GAP = isRow ? 5 : 6;

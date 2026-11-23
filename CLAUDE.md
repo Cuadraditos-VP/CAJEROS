@@ -254,9 +254,11 @@ Resumen (a pedido de Guillermo): solo F del mes y HE = horas extra del 26 del me
 `OT_TABLE`/`tipoDia` iguales a los de cajeros); del mes anterior se toma su programación inicial (`m.ini`, que trae
 `mesDeCajeros` desde `inicial` de turnos_cajeros; si no hay, `m.t`).
 Totales fijos abajo de la pantalla (`fijarTotales`, sticky bottom por fila), como tablero aparte: separador del color
-del fondo de pantalla (`tothdr`, a pedido de Guillermo en vez de la franja oscura con los días), color del turno solo en la etiqueta, números en negrita sobre blanco/gris. Separador de 24px, igual al espacio entre grupos. La grilla se achica para mostrar justo dos grupos y abajo del segundo los totales
-(`altoDosGrupos`, el par de grupos más alto; si no entra en la pantalla, achica filas de días `--hh` 32px, de totales
-`--trh` 14px y renglones `--rh` hasta 16px). Sin video/imagen de inicio (a pedido de Guillermo).
+del fondo de pantalla (`tothdr`, a pedido de Guillermo en vez de la franja oscura con los días), color del turno solo en la etiqueta, números en negrita sobre blanco/gris. Totales a medida (a pedido de Guillermo): la grilla llega hasta abajo y la tabla de totales se agranda para empezar justo
+donde termina el segundo grupo visible (`ajustarTot`: filas `--trh`, separador `--sep` ≥ 24px igual al espacio entre grupos;
+se recalcula al cambiar el grupo de arriba). El alto de renglones es uno solo por mes (`altoDosGrupos`: si no entran dos
+grupos + totales, `--hh` 32px y `--rh` hasta 16px) para que nada se corra. Sin totales: toda la pantalla, sin franja.
+Sin video/imagen de inicio (a pedido de Guillermo).
 Ícono propio (almanaque con casilleros de colores, franja bordó, fondo azul: `programar/icon-*.png`) y manifest con `id`
 propio, para no confundirla con la app de cajeros (que tiene el chaleco).
 En pantalla la fila de días de arriba no queda fija (`#gridCard .grid thead th{top:auto}`: confundía, los demás grupos

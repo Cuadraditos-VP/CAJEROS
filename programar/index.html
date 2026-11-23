@@ -367,7 +367,7 @@
   tbody.tot tr:not(.gap) > td:not(.lab):not(.blank){border-right-color:#D5DBE3}
   tbody.tot tr:not(.gap) > td.dom{border-right:2px solid #1B2430 !important}
   tbody.tot tr:not(.gap) > td.lab{font-weight:800 !important;font-size:9.5px !important;letter-spacing:.4px}
-  tbody.tot tr.tothdr > td{background:var(--bg) !important;height:24px !important;border:0 !important;padding:0}   /* igual que el espacio entre grupos */
+  tbody.tot tr.tothdr > td{background:var(--bg) !important;height:var(--sep,24px) !important;border:0 !important;padding:0}   /* igual que el espacio entre grupos */
   tbody.tot tr.tothdr + tr > td:not(.blank){border-top:2px solid #1B2430}
   tbody.tot tr.tothdr + tr > td.lab{border-top-left-radius:8px}
   tbody.tot tr:last-child > td.lab{border-bottom-left-radius:8px}
@@ -1029,7 +1029,6 @@ function render(){
 }
 
 /* ---- totales fijos abajo: cada fila se pega a la altura de las que tiene debajo ---- */
-function fijarTotales(){ altoDosGrupos(fijarSticky()); }
 function fijarSticky(){
   const card=document.getElementById("gridCard");
   const filas=[...document.querySelectorAll("#grid tbody.tot tr:not(.gap)")];
@@ -1039,34 +1038,52 @@ function fijarSticky(){
     filas[i].querySelectorAll("td").forEach(td=>td.style.bottom=b+"px"); b+=filas[i].getBoundingClientRect().height; }
   return b+pad;
 }
-/* la grilla muestra justo dos grupos y abajo del segundo arranca el separador de los totales (a pedido de Guillermo).
-   Si en la pantalla no entran, los renglones se achican solos (hasta 16px). */
-function altoDosGrupos(totH){
-  const card=document.getElementById("gridCard"), g=document.getElementById("grid");
-  card.style.maxHeight=""; ["--rh","--hh","--trh"].forEach(v=>g.style.removeProperty(v));
-  totH=fijarSticky();   // con las alturas normales
-  if(document.body.classList.contains("view-pref")) return;
-  const medir=()=>{
-    const cr=card.getBoundingClientRect(), y=tr=>card.scrollTop+tr.getBoundingClientRect().top-cr.top;
-    const tops=[...card.querySelectorAll("#grid thead tr, #grid tr.medio")].map(y);
-    const ult=[...card.querySelectorAll("#grid tbody.people tr.gbot")].pop();
-    if(tops.length<3 || !ult) return null;
-    const fin=[...tops.slice(2).map(t=>t-24), y(ult)+ult.getBoundingClientRect().height];   // donde termina cada grupo
-    let D=0, kk=0; for(let k=0;k+1<tops.length;k++){ const x=fin[k]-tops[k]; if(x>D){ D=x; kk=k; } }   // el par de grupos más alto
-    return {D, filas:(GROUPS_DEF[kk]?GROUPS_DEF[kk][2]:10)+(GROUPS_DEF[kk+1]?GROUPS_DEF[kk+1][2]:10)};
-  };
-  let m=medir(); if(!m) return;
-  const disp=innerHeight-card.getBoundingClientRect().top-14;       // lo que hay de pantalla para la grilla
-  const altoTot=()=>[...g.querySelectorAll("tbody.tot tr")].reduce((a,tr)=>a+tr.getBoundingClientRect().height,0);
-  if(4+m.D+totH>disp){
-    // no entra: primero filas de días y de totales más bajas, después los renglones (hasta 16px)
-    g.style.setProperty("--hh","32px"); g.style.setProperty("--trh","14px");
-    fijarSticky(); totH=altoTot(); m=medir();
-    const sobra=4+m.D+totH-disp;
-    if(sobra>0){ g.style.setProperty("--rh", Math.max(16, Math.floor(28-sobra/m.filas))+"px"); m=medir(); }
-  }
-  card.style.maxHeight=Math.round(4+m.D+totH)+"px";
+/* TOTALES A MEDIDA (a pedido de Guillermo): la grilla llega hasta abajo de la pantalla y la tabla de totales se agranda
+   para empezar justo donde termina el segundo grupo que se ve (los grupos tienen 9 o 10 personas: se ajusta al cambiar
+   de grupo). Si no entran dos grupos y los totales, se achican los renglones (hasta 16px). Sin totales: toda la pantalla. */
+const TOT_MIN=14;   // alto mínimo de cada fila de totales
+let PAR_ACT=-1;     // grupo que está arriba (para no recalcular si no cambió)
+// medidas de los grupos dentro de la grilla
+function medidasGrupos(){
+  const card=document.getElementById("gridCard"), cr=card.getBoundingClientRect(), y=tr=>card.scrollTop+tr.getBoundingClientRect().top-cr.top;
+  const tops=[...card.querySelectorAll("#grid thead tr, #grid tr.medio")].map(y);
+  const ult=[...card.querySelectorAll("#grid tbody.people tr.gbot")].pop(); if(!tops.length || !ult) return null;
+  const fin=[...tops.slice(1).map(t=>t-24), y(ult)+ult.getBoundingClientRect().height];   // donde termina cada grupo
+  const alto=k=>{ const k2=Math.min(k+1,tops.length-1); return fin[k2]-Math.max(0,tops[k]-4); };   // grupo k y el siguiente (como queda al saltar)
+  return {tops, alto};
 }
+// el alto de los renglones: uno solo para todo el mes (así nada se corre al cambiar de grupo)
+function altoDosGrupos(){
+  const card=document.getElementById("gridCard"), g=document.getElementById("grid");
+  card.style.maxHeight=""; ["--rh","--hh","--trh","--sep"].forEach(v=>g.style.removeProperty(v));
+  PAR_ACT=-1;
+  if(document.body.classList.contains("view-pref") || g.classList.contains("hide-h")) return;
+  const filasTot=g.querySelectorAll("tbody.tot tr:not(.tothdr)").length; if(!filasTot) return;
+  const minTot=24+filasTot*TOT_MIN, H=card.clientHeight;
+  const maxPar=()=>{ const m=medidasGrupos(); if(!m) return null; let D=0, k0=0; m.tops.forEach((t,k)=>{ const a=m.alto(k); if(a>D){ D=a; k0=k; } }); return {D, k0}; };
+  let p=maxPar(); if(!p) return;
+  if(H-p.D<minTot){   // no entra: filas de días más bajas y renglones más chicos
+    g.style.setProperty("--hh","32px"); p=maxPar();
+    const filas=(GROUPS_DEF[p.k0]?GROUPS_DEF[p.k0][2]:0)+(GROUPS_DEF[p.k0+1]?GROUPS_DEF[p.k0+1][2]:0);
+    const falta=minTot-(H-p.D);
+    if(falta>0 && filas) g.style.setProperty("--rh", Math.max(16, Math.floor(28-falta/filas))+"px");
+  }
+  ajustarTot();
+}
+// la tabla de totales arranca donde termina el segundo grupo que se ve
+function ajustarTot(){
+  const card=document.getElementById("gridCard"), g=document.getElementById("grid");
+  if(document.body.classList.contains("view-pref") || g.classList.contains("hide-h")) return;
+  const filasTot=g.querySelectorAll("tbody.tot tr:not(.tothdr)").length, m=medidasGrupos(); if(!filasTot || !m) return;
+  let k=0, best=1e9; m.tops.forEach((t,i)=>{ const d=Math.abs(t-4-card.scrollTop); if(d<best){ best=d; k=i; } });
+  PAR_ACT=k;
+  const minTot=24+filasTot*TOT_MIN, T=Math.max(minTot, card.clientHeight-m.alto(k));   // alto de la tabla (con el separador)
+  const fila=Math.max(TOT_MIN, Math.floor((T-24)/filasTot));
+  g.style.setProperty("--trh", fila+"px");
+  g.style.setProperty("--sep", Math.max(24, T-fila*filasTot)+"px");   // lo que sobra (menos que una fila) va al separador
+  fijarSticky();
+}
+function fijarTotales(){ altoDosGrupos(); fijarSticky(); }
 window.addEventListener("resize",()=>fijarTotales());
 /* ---- la ruedita del mouse salta de grupo en grupo (cada grupo queda con su fila de días arriba) ---- */
 (function(){
@@ -1088,6 +1105,12 @@ window.addEventListener("resize",()=>fijarTotales());
     card.scrollTo({top:Math.min(dest,max), behavior:"smooth"});
     quieto=ahora+380;
   },{passive:false});
+  // al terminar de desplazarse: si cambió el grupo de arriba, se reacomodan los totales
+  let finT=null; card.addEventListener("scroll",()=>{ clearTimeout(finT); finT=setTimeout(()=>{
+    const cr=card.getBoundingClientRect(), tops=[...card.querySelectorAll("#grid thead tr, #grid tr.medio")].map(tr=>card.scrollTop+tr.getBoundingClientRect().top-cr.top);
+    let k=0, best=1e9; tops.forEach((t,i)=>{ const d=Math.abs(t-4-card.scrollTop); if(d<best){ best=d; k=i; } });
+    if(k!==PAR_ACT){ const st=card.scrollTop; ajustarTot(); card.scrollTop=st; }
+  },140); });
 })();
 /* ---- mostrar / ocultar tablas auxiliares ---- */
 const grid=document.getElementById("grid");
@@ -1095,7 +1118,7 @@ function setToggle(btn, cls, on){
   btn.setAttribute("aria-pressed", on);
   grid.classList.toggle(cls, !on);
   if(cls==="hide-v"){ SHOW_V = on; if(people.length) render(); }
-  if(cls==="hide-h" && on) fijarTotales();
+  if(cls==="hide-h") fijarTotales();
   try{ localStorage.setItem("pcaj_"+cls, on?"1":"0"); }catch(e){}
 }
 /* ---- estilo de las líneas divisorias: se elige con el botón "Líneas" (va rotando) ---- */

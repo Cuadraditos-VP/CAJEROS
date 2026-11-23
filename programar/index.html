@@ -244,6 +244,8 @@
 
   /* encabezado de días */
   .grid thead th{position:sticky;top:0;z-index:3;background:#fff;height:44px;font-weight:600;border-bottom:2px solid var(--line-strong)}
+  /* en pantalla la fila de días de arriba NO queda fija: cada grupo tiene la suya (si no, los demás grupos parecían el grupo 1) */
+  #gridCard .grid thead th{top:auto}
   .grid thead th.corner{text-align:left;padding-left:10px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.5px}
   .dh .ab{display:block;font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.4px}
   .dh .nu{display:block;font-size:14px;font-weight:700;margin-top:1px}
@@ -363,7 +365,7 @@
   tbody.tot tr:not(.gap) > td:not(.lab):not(.blank){border-right-color:#D5DBE3}
   tbody.tot tr:not(.gap) > td.dom{border-right:2px solid #1B2430 !important}
   tbody.tot tr:not(.gap) > td.lab{font-weight:800 !important;font-size:9.5px !important;letter-spacing:.4px}
-  tbody.tot tr.tothdr > td{background:var(--bg) !important;height:14px !important;border:0 !important;padding:0}
+  tbody.tot tr.tothdr > td{background:var(--bg) !important;height:24px !important;border:0 !important;padding:0}   /* igual que el espacio entre grupos */
   tbody.tot tr.tothdr + tr > td:not(.blank){border-top:2px solid #1B2430}
   tbody.tot tr.tothdr + tr > td.lab{border-top-left-radius:8px}
   tbody.tot tr:last-child > td.lab{border-bottom-left-radius:8px}
@@ -1026,7 +1028,7 @@ function render(){
   });
 
   // totales por día + francos patrones
-  h += `<tbody class="tot"><tr class="gap"><td class="bl" colspan="2"></td><td colspan="${N_DAYS+(PV?1:0)}"></td>${auxTd('blank')}</tr>`;
+  h += `<tbody class="tot">`;
   // separador del color del fondo de pantalla entre la grilla y el tablero de totales (fijo con él)
   h += `<tr class="tothdr"><td colspan="${2+N_DAYS+(PV?1:0)+auxCols()}"></td></tr>`;
   TOT.forEach(([lab,cls,codes],ti)=>{
@@ -1058,6 +1060,27 @@ function fijarTotales(){
     filas[i].querySelectorAll("td").forEach(td=>td.style.bottom=b+"px"); b+=filas[i].getBoundingClientRect().height; }
 }
 window.addEventListener("resize",fijarTotales);
+/* ---- la ruedita del mouse salta de grupo en grupo (cada grupo queda con su fila de días arriba) ---- */
+(function(){
+  const card=document.getElementById("gridCard");
+  let quieto=0, acum=0;
+  const topes=()=>{ const cr=card.getBoundingClientRect();
+    return [...card.querySelectorAll("#grid thead tr, #grid tr.medio")].map(tr=>Math.max(0, Math.round(card.scrollTop + tr.getBoundingClientRect().top - cr.top - 4))); };
+  card.addEventListener("wheel",e=>{
+    if(e.ctrlKey || e.shiftKey || Math.abs(e.deltaX)>Math.abs(e.deltaY)) return;   // zoom o desplazamiento de costado: normal
+    if(document.body.classList.contains("view-pref") || !card.querySelector("#grid tr.medio")) return;
+    e.preventDefault();
+    const ahora=Date.now();
+    if(ahora<quieto){ return; }                                   // todavía se está moviendo al grupo anterior
+    acum+=e.deltaY; if(Math.abs(acum)<30) return;                 // el touchpad manda muchos movimientos chiquitos
+    const dir=acum>0?1:-1; acum=0;
+    const t=topes(), y=card.scrollTop, max=card.scrollHeight-card.clientHeight;
+    let dest = dir>0 ? t.find(x=>x>y+6) : [...t].reverse().find(x=>x<y-6);
+    if(dest===undefined) dest = dir>0 ? max : 0;
+    card.scrollTo({top:Math.min(dest,max), behavior:"smooth"});
+    quieto=ahora+380;
+  },{passive:false});
+})();
 /* ---- mostrar / ocultar tablas auxiliares ---- */
 const grid=document.getElementById("grid");
 function setToggle(btn, cls, on){

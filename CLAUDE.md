@@ -253,6 +253,8 @@ JU: E 3, E1 3, X 2; resto E 4; N y T el resto. Francos: rueda por grupo, 2 cada 
 Resumen (a pedido de Guillermo): solo F del mes y HE = horas extra del 26 del mes anterior al 25 de este (`horasExtra`,
 `OT_TABLE`/`tipoDia` iguales a los de cajeros); del mes anterior se toma su programación inicial (`m.ini`, que trae
 `mesDeCajeros` desde `inicial` de turnos_cajeros; si no hay, `m.t`).
+Totales fijos abajo de la pantalla (`fijarTotales`, sticky bottom por fila). Condicionales de grilla y totales apagados
+(`CONDICIONALES = false`, son distintos a jefes); el franco en rojo del resumen queda.
 No es gemela de progjefes: los cambios de acá no van a jefes.
 
 ## Diferencias con la gemela (jefes)

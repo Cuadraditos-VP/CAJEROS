@@ -351,6 +351,12 @@
   /* resaltado provisorio de reglas no cumplidas (después definimos el formato) */
   .grid td.aviso{background:#FFC24B !important;color:#3A2A00 !important;font-weight:700;cursor:help}
   .grid td.alerta{background:#FF0000 !important;color:#fff !important;font-weight:700;cursor:help}
+  /* totales fijos abajo de la pantalla (a pedido de Guillermo): la grilla se desplaza por detrás */
+  #gridCard tbody.tot tr:not(.gap) > td{position:sticky;z-index:3}
+  #gridCard tbody.tot tr:not(.gap) > td.lab{z-index:4}
+  #gridCard tbody.tot tr:not(.gap) > td.blank,#gridCard tbody.tot tr:not(.gap) > td.prevc{background:var(--bg) !important}
+  #gridCard tbody.tot tr.tot1 > td{box-shadow:0 -3px 6px rgba(16,24,40,.22)}
+  #gridCard tbody.tot tr.tot1 > td.blank{box-shadow:none}
   tbody.tot td.lab{position:sticky;left:0;z-index:2;text-align:left;padding-left:10px;font-size:8px;letter-spacing:.3px;border-right:2px solid var(--line-strong)}
   tbody.tot td.blank{border:0;background:transparent !important}
   tr.fprow td{background:#fff;height:22px;font-size:11px}
@@ -807,6 +813,10 @@ function stats(p){
   return {st:[t.filter(esFranco).length, he.total], he};
 }
 
+// Condicionales de la grilla y los totales (ámbar en los turnos, rojo/ámbar en los totales): a pedido de Guillermo,
+// por ahora apagados, porque los de cajeros son distintos a los de jefes. Para volver a mostrarlos: true.
+// Los francos en rojo del resumen siguen (a pedido de él).
+const CONDICIONALES = false;
 let SHOW_V = true; // resumen por cajero visible
 const auxCols = () => SHOW_V ? 1 + STAT.length : 0; // separador + francos + horas extra
 const auxTd = cls => SHOW_V ? `<td class="${cls}" colspan="${auxCols()}"></td>` : '';
@@ -930,7 +940,7 @@ document.getElementById("togPrev").onclick=()=>{
   render();
 };
 function render(){
-  AMBAR = true;   // ámbar (situaciones no ideales): siempre
+  AMBAR = CONDICIONALES;   // ámbar (situaciones no ideales): por ahora apagado en cajeros
   const PV = prevDia();   // último día del mes anterior (null si está oculto)
   let h = '<colgroup><col class="leg"><col class="nom">' + (PV ? '<col class="prev">' : '');
   for(let d=1; d<=N_DAYS; d++) h += '<col>';
@@ -1010,7 +1020,7 @@ function render(){
     h += `<tr class="${cls}"><td class="lab" colspan="2">${lab}</td>`;
     if(PV){ const n=PV.pm ? people.filter(p=>codes.includes(PV.cod(p))).length : 0; h += `<td class="prevc">${n||''}</td>`; }
     for(let d=1; d<=N_DAYS; d++){
-      const n=countDay(d,codes), msg = (!EVT.has(d) && REGLAS_DIA[lab]) ? REGLAS_DIA[lab](n,d) : "";
+      const n=countDay(d,codes), msg = (CONDICIONALES && !EVT.has(d) && REGLAS_DIA[lab]) ? REGLAS_DIA[lab](n,d) : "";
       const av = (AMBAR && !msg && !EVT.has(d) && AVISOS_DIA[lab]) ? AVISOS_DIA[lab](n,d) : "";
       h += `<td class="${dom(d)} ${msg?'alerta':''} ${av?'aviso':''}" ${msg?`title="${msg.includes(' · hay ')?msg:msg+' (hay '+n+')'}"`:(av?`title="${av} (hay ${n})"`:'')}>${n||''}</td>`;
     }
@@ -1021,15 +1031,27 @@ function render(){
   document.getElementById("grid").innerHTML = h;
   if(typeof marcarSel==="function") marcarSel();
   requestAnimationFrame(()=>sombras("gridCard"));
+  fijarTotales();
   updateRegUI();
 }
 
+/* ---- totales fijos abajo: cada fila se pega a la altura de las que tiene debajo ---- */
+function fijarTotales(){
+  const card=document.getElementById("gridCard");
+  const filas=[...document.querySelectorAll("#grid tbody.tot tr:not(.gap)")];
+  const pad=parseFloat(getComputedStyle(card).paddingBottom)||0;   // el espacio de abajo del recuadro
+  let b=-pad;
+  for(let i=filas.length-1;i>=0;i--){ filas[i].classList.toggle("tot1", i===0);
+    filas[i].querySelectorAll("td").forEach(td=>td.style.bottom=b+"px"); b+=filas[i].getBoundingClientRect().height; }
+}
+window.addEventListener("resize",fijarTotales);
 /* ---- mostrar / ocultar tablas auxiliares ---- */
 const grid=document.getElementById("grid");
 function setToggle(btn, cls, on){
   btn.setAttribute("aria-pressed", on);
   grid.classList.toggle(cls, !on);
   if(cls==="hide-v"){ SHOW_V = on; if(people.length) render(); }
+  if(cls==="hide-h" && on) fijarTotales();
   try{ localStorage.setItem("pcaj_"+cls, on?"1":"0"); }catch(e){}
 }
 /* ---- estilo de las líneas divisorias: se elige con el botón "Líneas" (va rotando) ---- */
@@ -1968,8 +1990,8 @@ document.getElementById("apGo").onclick=()=>{
       res.innerHTML = (prob.length ? `<div class="ap-warn">Programado, pero hay ${prob.length} ${prob.length===1?"punto obligatorio":"puntos obligatorios"} sin cumplir:</div><ul class="ap-list">${prob.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`
                                    : `<div class="ap-ok">Listo: se cumplen las coberturas obligatorias de todos los días y los francos de cada cajero.</div>`)
         + (r.francosPuestos ? `<p class="ap-p">Se pusieron ${r.francosPuestos} francos que faltaban.</p>` : "")
-        + (amb ? `<p class="ap-p">${amb} ${amb===1?"casillero no pudo":"casilleros no pudieron"} cumplir alguna prioridad: están en ámbar (pasá el mouse o tocá para ver el motivo).</p>` : `<p class="ap-p">Se cumplieron todas las prioridades.</p>`)
-        + (suaves ? `<p class="ap-p">${suaves} ${suaves===1?"total del día queda":"totales del día quedan"} fuera de lo ideal (en ámbar abajo).</p>` : "")
+        + (!CONDICIONALES ? "" : amb ? `<p class="ap-p">${amb} ${amb===1?"casillero no pudo":"casilleros no pudieron"} cumplir alguna prioridad: están en ámbar (pasá el mouse o tocá para ver el motivo).</p>` : `<p class="ap-p">Se cumplieron todas las prioridades.</p>`)
+        + (CONDICIONALES && suaves ? `<p class="ap-p">${suaves} ${suaves===1?"total del día queda":"totales del día quedan"} fuera de lo ideal (en ámbar abajo).</p>` : "")
         + `<div class="ap-res-row"><button id="apUndo">Deshacer</button><button class="go" id="apClose">Aceptar</button></div>`;
     }catch(err){
       res.innerHTML=`<div class="ap-warn">Ocurrió un error al programar:</div><p class="ap-p" style="font-family:monospace;font-size:11px;white-space:pre-wrap">${esc(String(err && (err.stack||err.message)||err))}</p><div class="ap-res-row"><button id="apUndo">Deshacer</button><button class="go" id="apClose">Cerrar</button></div>`;

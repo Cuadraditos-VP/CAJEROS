@@ -1,0 +1,16 @@
+{
+  "name": "Programar Cajeros",
+  "short_name": "Prog. Cajeros",
+  "description": "Para armar la programación mensual de turnos de cajeros",
+  "lang": "es-AR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#E4D8BE",
+  "theme_color": "#1F2F44",
+  "icons": [
+    { "src": "../icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "../icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

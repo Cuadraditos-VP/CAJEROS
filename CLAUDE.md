@@ -250,6 +250,9 @@ Sin nombres en el HTML: la lista (`m.lista`: leg, nom, g, o) se trae de `turnos_
 Colores de fábrica = los de cajeros (y los publicados en la colección `cajeros`). Reglas del día en `cupos(d)` (sacadas
 de oct/nov 2026): MS 7; MD 2 VI/SA/DO/feriado; T3 5 SA/DO, 3 resto; víspera (VI, SA, antes de feriado): TE 9, E 7, X 2;
 JU: E 3, E1 3, X 2; resto E 4; N y T el resto. Francos: rueda por grupo, 2 cada 8 días (`ruedaGrupos`).
+Resumen (a pedido de Guillermo): solo F del mes y HE = horas extra del 26 del mes anterior al 25 de este (`horasExtra`,
+`OT_TABLE`/`tipoDia` iguales a los de cajeros); del mes anterior se toma su programación inicial (`m.ini`, que trae
+`mesDeCajeros` desde `inicial` de turnos_cajeros; si no hay, `m.t`).
 No es gemela de progjefes: los cambios de acá no van a jefes.
 
 ## Diferencias con la gemela (jefes)

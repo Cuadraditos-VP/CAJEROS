@@ -225,7 +225,11 @@
   body.lin-filas .grid td.cell, body.lin-filas .grid th.dh, body.lin-filas .grid td.evtblock,
   body.lin-filas tbody.tot td:not(.lab){border-right-color:transparent}
   .grid col.leg{width:54px} .grid col.nom{width:150px}
-  .grid col.sp{width:10px} .grid col.s{width:23px}
+  .grid col.sp{width:10px} .grid col.s{width:26px} .grid col.s.he{width:58px}
+  .grid .s.c1{background:#F4F1FA;color:#3B2A63}
+  .grid td.s.he{font-weight:700;cursor:help}
+  .grid td.s.he.sinant{color:#8A7FA6;font-style:italic}
+  .grid th.s .he-p{display:block;font-size:7.5px;font-weight:600;color:var(--muted);letter-spacing:0}
   /* último día del mes anterior (solo de consulta, para programar el día 1) */
   .grid col.prev{width:38px}
   .grid th.prevh{background:repeating-linear-gradient(135deg,#F1F3F6 0 4px,#E6EAEF 4px 8px) !important;cursor:help;border-right:3px solid var(--line-strong) !important}
@@ -760,20 +764,51 @@ const AVISOS_DIA = {
 // Resumen por cajero: francos del mes (enero, febrero y marzo: 6; resto: 6 si el mes tiene 30 días, 7 si tiene 31)
 const francosMes = () => MO<=3 ? 6 : (N_DAYS===31 ? 7 : 6);
 
-// Resumen por cajero: cada columna cuenta su turno; T1 cuenta como T
-const STAT = [["MD",["MD"]],["MS",["MS"]],["T3",["T3"]],["T",["T","T1"]],["TE",["TE"]],["N",["N"]],["E1",["E1"]],["E",["E"]],["X",["X"]],["F",["F"]],["L",["LAO"]]];
-const STAT_F = STAT.findIndex(x=>x[0]==="F");
+// Resumen por cajero: solo los francos del mes y las horas extra del período (26 del mes anterior → 25 de este)
+const STAT = [["F",["F"]],["HE",[]]];
+const STAT_F = 0;
 // Es franco: F, o un franco patrón que cae dentro de LAO o LIC
 const esFranco = (c,k) => c==="F" || (BLOQUE.includes(c) && FP.has(k+1));
+/* ---- HORAS EXTRA (igual que en la app de cajeros y Control VP) ----
+   Tipo de día: domingo o feriado → "dom" · sábado → "sab" · jueves → "jue" (jueves feriado → "juefer");
+   jueves víspera de feriado → "comun" (o "dom" si además es feriado). */
+const OT_TABLE = {
+  T3: { comun: 2.5, sab: 3.75, dom: 5, jue: 2.5, juefer: 5 },
+  TE: { comun: 2, sab: 2, dom: 2, jue: 2, juefer: 2 },
+  E:  { comun: 2, sab: 2, dom: 2, jue: 2, juefer: 2 },
+  E1: { comun: 2, sab: 2, dom: 2, jue: 4, juefer: 4 },
+  X:  { comun: 3, sab: 3, dom: 3, jue: 5, juefer: 5 }
+};
+// feriados del mes k (el que se está mirando: los de la pantalla)
+const ferDe = k => k===keyOf(Y,MO) ? FER : new Set(((STORE.meses[k]||{}).fer)||[]);
+const mesSigK = k => { let [y,m]=parseKey(k); m++; if(m>12){ m=1; y++; } return keyOf(y,m); };
+const mesAntK = k => { let [y,m]=parseKey(k); m--; if(m<1){ m=12; y--; } return keyOf(y,m); };
+function tipoDia(k,d){
+  const [y,m]=parseKey(k), nd=new Date(y,m,0).getDate(), wd=(new Date(y,m-1,d).getDay()+6)%7, fer=ferDe(k).has(d);
+  if(wd===3){ const visp = d<nd ? ferDe(k).has(d+1) : ferDe(mesSigK(k)).has(1);
+    if(visp) return fer ? "dom" : "comun"; return fer ? "juefer" : "jue"; }
+  if(fer || wd===6) return "dom";
+  if(wd===5) return "sab";
+  return "comun";
+}
+const horasTurno = (k,d,c) => { const r=OT_TABLE[String(c||"").trim().toUpperCase()]; return r ? (r[tipoDia(k,d)]||0) : 0; };
+// mes anterior: se toma su programación inicial (la que se armó acá, o la inicial de la app de cajeros)
+function horasExtra(p){
+  const k=keyOf(Y,MO), ka=mesAntK(k), pm=STORE.meses[ka], pt=pm && (pm.ini||pm.t||{})[p.leg];
+  let ant=0, act=0;
+  if(pt){ const nd=new Date(...parseKey(ka),0).getDate(); for(let d=26; d<=nd; d++) ant+=horasTurno(ka,d,pt[d-1]); }
+  for(let d=1; d<=Math.min(25,N_DAYS); d++) if(!EVT.has(d) || BLOQUE.includes(p.t[d-1])) act+=horasTurno(k,d,p.t[d-1]);
+  return {total:ant+act, ant, act, conAnt:!!pm};
+}
+const fmtH = n => { const r=Math.round(n*100)/100; return String(r).replace(".",","); };
 function stats(p){
   const t = p.t.map((c,k)=> EVT.has(k+1) && !BLOQUE.includes(c) ? "" : c);
-  const st = STAT.map(([lab,g]) => lab==="F" ? t.filter(esFranco).length : t.filter(c=>g.includes(c)).length);
-  const vsd = ["VI","SA","DO"].map(ab => t.filter((c,k)=>esFranco(c,k) && dayAb(k+1)===ab).length);
-  return {st,vsd};
+  const he=horasExtra(p);
+  return {st:[t.filter(esFranco).length, he.total], he};
 }
 
 let SHOW_V = true; // resumen por cajero visible
-const auxCols = () => SHOW_V ? 1 + STAT.length + 1 + 3 : 0; // separador + resumen + separador + VI/SA/DO
+const auxCols = () => SHOW_V ? 1 + STAT.length : 0; // separador + francos + horas extra
 const auxTd = cls => SHOW_V ? `<td class="${cls}" colspan="${auxCols()}"></td>` : '';
 
 /* ---- IMPRIMIR: copia la misma grilla de pantalla (sin tablas auxiliares ni totales) y la ajusta a hoja Legal ---- */
@@ -899,7 +934,7 @@ function render(){
   const PV = prevDia();   // último día del mes anterior (null si está oculto)
   let h = '<colgroup><col class="leg"><col class="nom">' + (PV ? '<col class="prev">' : '');
   for(let d=1; d<=N_DAYS; d++) h += '<col>';
-  if(SHOW_V) h += '<col class="sp">' + '<col class="s">'.repeat(7) + '<col class="sp">' + '<col class="s">'.repeat(3);
+  if(SHOW_V) h += '<col class="sp"><col class="s"><col class="s he">';
   h += '</colgroup>';
 
   // encabezado
@@ -908,8 +943,9 @@ function render(){
   if(PV) dayRow += `<th class="prevh ${PV.fp?'fp':''} ${PV.fer?'fer':''}" title="${esc(PV.tit)}"><span class="ab">${PV.ab}</span><span class="nu">${PV.nd}</span></th>`;
   for(let d=1; d<=N_DAYS; d++) dayRow += `<th class="dh ${dayCls(d)} ${dom(d)} ${d===N_DAYS?'redge':''}" data-day="${d}" ${EVT.has(d)?`title="${esc(EVT.get(d)||"Evento especial")}"`:""}><span class="ab">${dayAb(d)}</span><span class="nu">${d}</span></th>`;
   if(SHOW_V){
-  dayRow += '<th class="sp"></th>' + STAT.map(([l],k)=>`<th class="s c${k} ${k===0?'first':''} ${k===STAT.length-1?'last':''}">${l}</th>`).join('');
-  dayRow += '<th class="sp"></th>' + ['VI','SA','DO'].map((l,k)=>`<th class="s w ${k===0?'first':''} ${k===2?'last':''}">${l}</th>`).join('');
+  { const [y,m]=parseKey(mesAntK(keyOf(Y,MO))), ant=MESES[m-1].slice(0,3), act=MESES[MO-1].slice(0,3);
+    dayRow += '<th class="sp"></th><th class="s c0 first" title="Francos del mes">F</th>'
+      + `<th class="s c1 last" title="Horas extra del 26 de ${ant.toLowerCase()} al 25 de ${act.toLowerCase()} (del mes anterior cuenta su programación inicial)">HE<span class="he-p">26/${m}–25/${MO}</span></th>`; }
   }
   dayRow += '</tr>';
   h += '<thead>' + dayRow.replace('%ESQ%', GROUPS_DEF.length ? GROUPS_DEF[0][0] : (curMonth().vacio ? 'SIN DATOS' : 'SIN CAJEROS')) + '</thead>';
@@ -951,14 +987,17 @@ function render(){
         }
         h += `<td class="cell ${dom(d)} ${d===N_DAYS?'redge':''} ${fp?'fuera':''}" data-r="${r}" data-d="${d}" style="background:${bg};color:${fg}" ${fp?`title="${fp}"`:''}>${codCelda(p,d)}</td>`;
       }
-      const {st,vsd}=stats(p);
+      const {st,he}=stats(p);
       if(SHOW_V){
       const fReq=francosMes(), fBad = p.t.some(c=>c) && st[STAT_F]!==fReq; // solo cajeros con turnos cargados
       h += '<td class="sp"></td>' + st.map((v,k)=>{
         const bad = k===STAT_F && fBad;
-        return `<td class="s c${k} ${k===0?'first':''} ${k===STAT.length-1?'last':''} ${bad?'alerta':''}" ${bad?`title="Tiene que tener ${fReq} francos (tiene ${v})"`:''}>${v||''}</td>`;
+        if(k===1){ const [ya,ma]=parseKey(mesAntK(keyOf(Y,MO)));
+          const tt = he.conAnt ? `${p.nom}: ${fmtH(he.ant)} h del 26 al fin de ${MESES[ma-1].toLowerCase()} (programación inicial) + ${fmtH(he.act)} h del 1 al 25 de ${MESES[MO-1].toLowerCase()}`
+                               : `${p.nom}: ${fmtH(he.act)} h del 1 al 25 (no hay programación de ${MESES[ma-1].toLowerCase()} para sumar del 26 en adelante)`;
+          return `<td class="s c1 last he ${he.conAnt?'':'sinant'}" title="${esc(tt)}">${v?fmtH(v):''}</td>`; }
+        return `<td class="s c${k} first ${bad?'alerta':''}" ${bad?`title="Tiene que tener ${fReq} francos (tiene ${v})"`:''}>${v||''}</td>`;
       }).join('');
-      h += '<td class="sp"></td>' + vsd.map((v,k)=>`<td class="s w ${k===0?'first':''} ${k===2?'last':''}">${v||''}</td>`).join('');
       }
       h += '</tr>';
     }
@@ -2129,7 +2168,7 @@ function aplicarColores(){
   COLORS.EV = EVC.slice();   // el código EV usa el mismo color que el evento especial por día
   const fondo = c.FONDO ? c.FONDO[0] : FONDO_FAB;
   let css=`:root{--evt:${EVC[0]};--evt-fg:${EVC[1]};--bg:${fondo}}\n`;
-  STAT.forEach(([l,codes],i)=>{ const k=codes[0]; css+=`.s.c${i}{background:${COLORS[k][0]};color:${COLORS[k][1]}}\n`; });
+  STAT.forEach(([l,codes],i)=>{ const k=codes[0]; if(k) css+=`.s.c${i}{background:${COLORS[k][0]};color:${COLORS[k][1]}}\n`; });
   TOT.forEach(([l,cl,codes])=>{ const k=codes[0]; css+=`.${cl} td{background:${COLORS[k][0]};color:${COLORS[k][1]}}\n`; });
   let st=document.getElementById("dynColors"); if(!st){ st=document.createElement("style"); st.id="dynColors"; document.head.appendChild(st); }
   st.textContent=css;
@@ -2330,18 +2369,19 @@ const clon=v=>v==null?v:JSON.parse(JSON.stringify(v));
 const estable=v=>JSON.stringify(v,(k,x)=> (x && typeof x==="object" && !Array.isArray(x)) ? Object.keys(x).sort().reduce((o,kk)=>(o[kk]=x[kk],o),{}) : x);
 const igual=(a,b)=>estable(a??null)===estable(b??null);
 const diasDe=k=>{ const [y,m]=k.split("-").map(Number); return new Date(y,m,0).getDate(); };
-const CAMPOS=["fp","fer","evt","lista","auto","reg"];
+const CAMPOS=["fp","fer","evt","lista","auto","reg","ini"];
 function aDoc(k,m){
   const n=diasDe(k), t={};
   Object.entries(m.t||{}).forEach(([leg,arr])=>{ const o={}; for(let d=1; d<=n; d++) o["d"+d]=(arr&&arr[d-1])||""; t[leg]=o; });
   const evt = Array.isArray(m.evt) ? Object.fromEntries(m.evt.map(d=>[String(d),""])) : {...(m.evt||{})};
-  return {t, fp:[...(m.fp||[])], fer:[...(m.fer||[])], evt, lista:m.lista?clon(m.lista):null, auto:clon(m.auto||{}), reg:m.reg||null};
+  return {t, fp:[...(m.fp||[])], fer:[...(m.fer||[])], evt, lista:m.lista?clon(m.lista):null, auto:clon(m.auto||{}), reg:m.reg||null, ini:m.ini?clon(m.ini):null};
 }
 function deDoc(k,D){
   const n=diasDe(k), t={};
   Object.entries(D.t||{}).forEach(([leg,o])=>{ const a=[]; for(let d=1; d<=n; d++) a.push((o&&o["d"+d])||""); t[leg]=a; });
   const m={t, fp:[...(D.fp||[])], fer:[...(D.fer||[])], evt:{...(D.evt||{})}, auto:clon(D.auto||{})};
   if(D.lista) m.lista=clon(D.lista);
+  if(D.ini) m.ini=clon(D.ini);
   if(D.reg) m.reg=D.reg;
   return m;
 }
@@ -2524,8 +2564,11 @@ function listaDe(d){
 // un mes de la app de cajeros como mes de acá (registrado: queda de consulta y para seguir la rueda de francos)
 function mesDeCajeros(k,d){
   const n=diasDe(k), t={};
-  (d.people||[]).forEach(p=>{ if(p && p.id!=null){ const a=(p.codes||[]).slice(0,n).map(c=>String(c||"").trim().toUpperCase()); while(a.length<n) a.push(""); t[String(p.id)]=a; } });
-  return {t, fp:[], fer:(d.feriados||[]).map(Number).filter(x=>x>=1&&x<=n), evt:{}, lista:listaDe(d), reg:new Date().toISOString(), deCajeros:true};
+  const fila=p=>{ const a=(p.codes||[]).slice(0,n).map(c=>String(c||"").trim().toUpperCase()); while(a.length<n) a.push(""); return a; };
+  (d.people||[]).forEach(p=>{ if(p && p.id!=null) t[String(p.id)]=fila(p); });
+  // la programación inicial del mes (para las horas extra del 26 en adelante del mes siguiente)
+  const ini={}; (Array.isArray(d.inicial) && d.inicial.length ? d.inicial : d.people||[]).forEach(p=>{ if(p && p.id!=null) ini[String(p.id)]=fila(p); });
+  return {t, ini, fp:[], fer:(d.feriados||[]).map(Number).filter(x=>x>=1&&x<=n), evt:{}, lista:listaDe(d), reg:new Date().toISOString(), deCajeros:true};
 }
 // feriados que ya marcó el admin en la app de cajeros (colección "cajeros", pública)
 async function feriadosDeCajeros(k){

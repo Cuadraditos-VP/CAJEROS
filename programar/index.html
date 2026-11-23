@@ -355,8 +355,7 @@
   #gridCard tbody.tot tr:not(.gap) > td{position:sticky;z-index:3}
   #gridCard tbody.tot tr:not(.gap) > td.lab{z-index:4}
   #gridCard tbody.tot tr:not(.gap) > td.blank,#gridCard tbody.tot tr:not(.gap) > td.prevc{background:var(--bg) !important}
-  #gridCard tbody.tot tr.tot1 > td{box-shadow:0 -4px 10px rgba(16,24,40,.30)}
-  #gridCard tbody.tot tr.tot1 > td.blank{box-shadow:none}
+
   /* tablero de totales: separado de la grilla (franja oscura de título, números sobre blanco, color solo en la etiqueta) */
   tbody.tot tr:not(.gap):not(.tothdr) > td:not(.lab):not(.blank):not(.prevc){background:#fff;color:#1B2430;font-weight:700}
   tbody.tot tr.par:not(.gap) > td:not(.lab):not(.blank):not(.prevc){background:#EEF2F7}
@@ -364,12 +363,9 @@
   tbody.tot tr:not(.gap) > td:not(.lab):not(.blank){border-right-color:#D5DBE3}
   tbody.tot tr:not(.gap) > td.dom{border-right:2px solid #1B2430 !important}
   tbody.tot tr:not(.gap) > td.lab{font-weight:800 !important;font-size:9.5px !important;letter-spacing:.4px}
-  tbody.tot tr.tothdr > td{background:#1F2F44 !important;color:#fff !important;height:20px !important;font-weight:800;border-bottom:0 !important;border-right-color:#2E4260}
-  tbody.tot tr.tothdr > td.blank{background:var(--bg) !important}
-  tbody.tot tr.tothdr > td span{font-size:7.5px;font-weight:600;opacity:.7}
-  tbody.tot tr.tothdr > td.fer{color:#FF8A8A !important}
-  tbody.tot tr.tothdr > td.lab{border-top-left-radius:8px;font-size:10px !important;letter-spacing:.8px}
-  tbody.tot tr.tothdr > td.redge,tbody.tot tr.tothdr > td:nth-last-child(2){border-top-right-radius:0}
+  tbody.tot tr.tothdr > td{background:var(--bg) !important;height:14px !important;border:0 !important;padding:0}
+  tbody.tot tr.tothdr + tr > td:not(.blank){border-top:2px solid #1B2430}
+  tbody.tot tr.tothdr + tr > td.lab{border-top-left-radius:8px}
   tbody.tot tr:last-child > td.lab{border-bottom-left-radius:8px}
   #gridCard tbody.tot tr.tothdr ~ tr > td:not(.blank){border-left:0}
   tbody.tot td.lab{position:sticky;left:0;z-index:2;text-align:left;padding-left:10px;font-size:8px;letter-spacing:.3px;border-right:2px solid var(--line-strong)}
@@ -1031,10 +1027,8 @@ function render(){
 
   // totales por día + francos patrones
   h += `<tbody class="tot"><tr class="gap"><td class="bl" colspan="2"></td><td colspan="${N_DAYS+(PV?1:0)}"></td>${auxTd('blank')}</tr>`;
-  // franja de título del tablero: repite los días para leerlo sin subir la vista
-  h += `<tr class="tothdr"><td class="lab" colspan="2">TOTALES POR DÍA</td>${PV?`<td class="prevc">${PV.nd}</td>`:""}`;
-  for(let d=1; d<=N_DAYS; d++) h += `<td class="${dom(d)} ${FER.has(d)?'fer':''}"><span>${dayAb(d)}</span> ${d}</td>`;
-  h += `${auxTd('blank')}</tr>`;
+  // separador del color del fondo de pantalla entre la grilla y el tablero de totales (fijo con él)
+  h += `<tr class="tothdr"><td colspan="${2+N_DAYS+(PV?1:0)+auxCols()}"></td></tr>`;
   TOT.forEach(([lab,cls,codes],ti)=>{
     h += `<tr class="${cls} ${ti%2?'par':''}"><td class="lab" colspan="2">${lab}</td>`;
     if(PV){ const n=PV.pm ? people.filter(p=>codes.includes(PV.cod(p))).length : 0; h += `<td class="prevc">${n||''}</td>`; }

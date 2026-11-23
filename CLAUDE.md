@@ -241,31 +241,12 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   licencia **oficial** no se pueden cambiar ni pedir (`esLicencia` en `puedeEditar`): solo el admin los puede corregir.
   Si el usuario se puso LIC él mismo (no viene de lo oficial), la puede sacar (caso Sanchez, que se la puso sin querer y quedó trabada).
 
-## Programar Cajeros (`programar/`)
-App aparte para **armar** la programación del mes (copia adaptada de `Cuadraditos-VP/programar-jefes`; a pedido de Guillermo).
-Se sirve en `…/CAJEROS/programar/`. Usa el mismo Firebase que cajeros pero con app de Firebase con nombre propio
-(`initializeApp(cfg,"programar")`, para no pisar la sesión de la app de cajeros) y colecciones `progr_*`
-(`REGLAS-FIREBASE-PROGRAMAR.md`). Claves de `localStorage` con prefijo `pcaj_` (mismo dominio que programar-jefes).
-Sin nombres en el HTML: la lista (`m.lista`: leg, nom, g, o) se trae de `turnos_cajeros` (solo el admin).
-Colores de fábrica = los de cajeros (y los publicados en la colección `cajeros`). Reglas del día en `cupos(d)` (sacadas
-de oct/nov 2026): MS 7; MD 2 VI/SA/DO/feriado; T3 5 SA/DO, 3 resto; víspera (VI, SA, antes de feriado): TE 9, E 7, X 2;
-JU: E 3, E1 3, X 2; resto E 4; N y T el resto. Francos: rueda por grupo, 2 cada 8 días (`ruedaGrupos`).
-Resumen (a pedido de Guillermo): solo F del mes y HE = horas extra del 26 del mes anterior al 25 de este (`horasExtra`,
-`OT_TABLE`/`tipoDia` iguales a los de cajeros); del mes anterior se toma su programación inicial (`m.ini`, que trae
-`mesDeCajeros` desde `inicial` de turnos_cajeros; si no hay, `m.t`).
-Totales fijos abajo de la pantalla (`fijarTotales`, sticky bottom por fila), como tablero aparte: separador del color
-del fondo de pantalla (`tothdr`, a pedido de Guillermo en vez de la franja oscura con los días), color del turno solo en la etiqueta, números en negrita sobre blanco/gris. Totales a medida (a pedido de Guillermo): la grilla llega hasta abajo y la tabla de totales se agranda para empezar justo
-donde termina el segundo grupo visible (`ajustarTot`: filas `--trh`, separador `--sep` ≥ 24px igual al espacio entre grupos;
-se recalcula al cambiar el grupo de arriba). El alto de renglones es uno solo por mes (`altoDosGrupos`: si no entran dos
-grupos + totales, `--hh` 32px y `--rh` hasta 16px) para que nada se corra. Sin totales: toda la pantalla, sin franja.
-Sin video/imagen de inicio (a pedido de Guillermo).
-Ícono propio (almanaque con casilleros de colores, franja bordó, fondo azul: `programar/icon-*.png`) y manifest con `id`
-propio, para no confundirla con la app de cajeros (que tiene el chaleco).
-En pantalla la fila de días de arriba no queda fija (`#gridCard .grid thead th{top:auto}`: confundía, los demás grupos
-parecían el grupo 1) y la ruedita salta de grupo en grupo (listener `wheel` sobre `#gridCard`; shift/ctrl/horizontal normal).
-Condicionales de grilla y totales apagados
-(`CONDICIONALES = false`, son distintos a jefes); el franco en rojo del resumen queda.
-No es gemela de progjefes: los cambios de acá no van a jefes.
+## Programar Cajeros (otra app, otro repositorio)
+La app para **armar** la programación está en su propio repositorio, `Cuadraditos-VP/porogramar-cajeros`
+(cuadraditos-vp.github.io/porogramar-cajeros/). A pedido de Guillermo **no se mezcla con este repositorio**: los cambios
+de esa app van allá. Acá solo quedó `programar/index.html`, que redirige a la dirección nueva, y `programar/sw.js`, que se
+borra solo. Usa el mismo Firebase (colecciones `progr_*`) y lee `turnos_cajeros`/`cajeros`: si se cambia cómo se guardan
+los turnos, avisar que también hay que tocar esa app.
 
 ## Diferencias con la gemela (jefes)
 - En cajeros el admin sube el mes entero con ↑ JSON (va a `turnos_cajeros` y al padrón); sus cambios de

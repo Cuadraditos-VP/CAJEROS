@@ -254,7 +254,8 @@ Resumen (a pedido de Guillermo): solo F del mes y HE = horas extra del 26 del me
 `OT_TABLE`/`tipoDia` iguales a los de cajeros); del mes anterior se toma su programación inicial (`m.ini`, que trae
 `mesDeCajeros` desde `inicial` de turnos_cajeros; si no hay, `m.t`).
 Totales fijos abajo de la pantalla (`fijarTotales`, sticky bottom por fila), como tablero aparte: separador del color
-del fondo de pantalla (`tothdr`, a pedido de Guillermo en vez de la franja oscura con los días), color del turno solo en la etiqueta, números en negrita sobre blanco/gris. Separador de 24px, igual al espacio entre grupos.
+del fondo de pantalla (`tothdr`, a pedido de Guillermo en vez de la franja oscura con los días), color del turno solo en la etiqueta, números en negrita sobre blanco/gris. Separador de 24px, igual al espacio entre grupos. La grilla se achica para mostrar justo dos grupos y abajo del segundo los totales
+(`altoDosGrupos`, el par de grupos más alto; si la pantalla es más baja, los totales quedan abajo de todo).
 En pantalla la fila de días de arriba no queda fija (`#gridCard .grid thead th{top:auto}`: confundía, los demás grupos
 parecían el grupo 1) y la ruedita salta de grupo en grupo (listener `wheel` sobre `#gridCard`; shift/ctrl/horizontal normal).
 Condicionales de grilla y totales apagados

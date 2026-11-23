@@ -241,6 +241,20 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   licencia **oficial** no se pueden cambiar ni pedir (`esLicencia` en `puedeEditar`): solo el admin los puede corregir.
   Si el usuario se puso LIC él mismo (no viene de lo oficial), la puede sacar (caso Sanchez, que se la puso sin querer y quedó trabada).
 
+## Programar Cajeros (`programar/`)
+App aparte para **armar** la programación del mes (copia adaptada de `Cuadraditos-VP/programar-jefes`; a pedido de Guillermo).
+Se sirve en `…/CAJEROS/programar/`. Usa el mismo Firebase que cajeros pero con app de Firebase con nombre propio
+(`initializeApp(cfg,"programar")`, para no pisar la sesión de la app de cajeros) y colecciones `progr_*`
+(`REGLAS-FIREBASE-PROGRAMAR.md`). Claves de `localStorage` con prefijo `pcaj_` (mismo dominio que programar-jefes).
+Sin nombres en el HTML: la lista (`m.lista`: leg, nom, g, o) se trae de `turnos_cajeros` (solo el admin).
+Colores de fábrica = los de cajeros (y los publicados en la colección `cajeros`). Reglas del día en `cupos(d)` (sacadas
+de oct/nov 2026): MS 7; MD 2 VI/SA/DO/feriado; T3 5 SA/DO, 3 resto; víspera (VI, SA, antes de feriado): TE 9, E 7, X 2;
+JU: E 3, E1 3, X 2; resto E 4; N y T el resto. Francos: rueda por grupo, 2 cada 8 días (`ruedaGrupos`).
+Resumen (a pedido de Guillermo): solo F del mes y HE = horas extra del 26 del mes anterior al 25 de este (`horasExtra`,
+`OT_TABLE`/`tipoDia` iguales a los de cajeros); del mes anterior se toma su programación inicial (`m.ini`, que trae
+`mesDeCajeros` desde `inicial` de turnos_cajeros; si no hay, `m.t`).
+No es gemela de progjefes: los cambios de acá no van a jefes.
+
 ## Diferencias con la gemela (jefes)
 - En cajeros el admin sube el mes entero con ↑ JSON (va a `turnos_cajeros` y al padrón); sus cambios de
   turnos sueltos van con ⬆ Publicar (también a `turnos_cajeros`), y los colores/feriados/letras con ⬆ Publicar

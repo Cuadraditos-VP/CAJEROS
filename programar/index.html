@@ -1058,6 +1058,20 @@ function fijarTotales(){
   let b=-pad;
   for(let i=filas.length-1;i>=0;i--){ filas[i].classList.toggle("tot1", i===0);
     filas[i].querySelectorAll("td").forEach(td=>td.style.bottom=b+"px"); b+=filas[i].getBoundingClientRect().height; }
+  altoDosGrupos(b+pad);
+}
+/* la grilla muestra justo dos grupos y abajo del segundo arranca el separador de los totales (a pedido de Guillermo) */
+function altoDosGrupos(totH){
+  const card=document.getElementById("gridCard");
+  card.style.maxHeight="";
+  if(document.body.classList.contains("view-pref")) return;
+  const cr=card.getBoundingClientRect(), y=tr=>card.scrollTop+tr.getBoundingClientRect().top-cr.top;
+  const tops=[...card.querySelectorAll("#grid thead tr, #grid tr.medio")].map(y);
+  const ult=[...card.querySelectorAll("#grid tbody.people tr.gbot")].pop();
+  if(tops.length<3 || !ult) return;
+  const fin=[...tops.slice(2).map(t=>t-24), y(ult)+ult.getBoundingClientRect().height];   // donde termina cada grupo
+  let D=0; for(let k=0;k+1<tops.length;k++) D=Math.max(D, fin[k]-tops[k]);               // dos grupos seguidos, el par más alto
+  card.style.maxHeight=Math.round(4+D+totH)+"px";
 }
 window.addEventListener("resize",fijarTotales);
 /* ---- la ruedita del mouse salta de grupo en grupo (cada grupo queda con su fila de días arriba) ---- */

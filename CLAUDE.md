@@ -236,7 +236,8 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   en el código (`pases_*.ab`, `miAb`, `sumarUsosTraidos`). El admin los corrige a mano con ✎ (`cel-ab-edit`). Reglas: `REGLAS-FIREBASE-USOS.md`.
 - **Festejo de los 100 usos** (solo cajeros, a pedido de Guillermo; en jefes NO): cuando el `ab` de su doc de `yo_*` llega a 100, ese celular muestra una lluvia de estrellas y "¡Felicitaciones, Nombre!" (`revisarFestejo100`, `festejar`, `#festejo`). Una sola vez por legajo en ese celular (`localStorage` `<PROP_PREF>Festejo100:<legajo>`, se anota recién al tocar el botón; la recarga automática espera si está abierto). Si el admin le corrige los usos con ✎ a menos de 100 se anota `festOtra` en su `yo_*` y vuelve a festejar al llegar; con 🎉 en Celulares (`cel-festejar`) anota `festPend` y le sale la próxima vez que abra la app, sin importar los usos, con "Gracias por tus colaboraciones" y sin el 100 (caso Sanchez: no le salía y no se la podía molestar). Las dos marcas las borra su celular al tocar el botón. El admin no.
 - **Licencia (LIC)**: no lleva texto (solo el color; el selector de turnos sí dice LIC). Los días de
-  licencia no se pueden cambiar ni pedir (`esLicencia` en `puedeEditar`): solo el admin los puede corregir.
+  licencia **oficial** no se pueden cambiar ni pedir (`esLicencia` en `puedeEditar`): solo el admin los puede corregir.
+  Si el usuario se puso LIC él mismo (no viene de lo oficial), la puede sacar (caso Sanchez, que se la puso sin querer y quedó trabada).
 
 ## Diferencias con la gemela (jefes)
 - En cajeros el admin sube el mes entero con ↑ JSON (va a `turnos_cajeros` y al padrón); sus cambios de

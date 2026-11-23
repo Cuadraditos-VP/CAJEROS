@@ -257,6 +257,8 @@ Totales fijos abajo de la pantalla (`fijarTotales`, sticky bottom por fila), com
 del fondo de pantalla (`tothdr`, a pedido de Guillermo en vez de la franja oscura con los días), color del turno solo en la etiqueta, números en negrita sobre blanco/gris. Separador de 24px, igual al espacio entre grupos. La grilla se achica para mostrar justo dos grupos y abajo del segundo los totales
 (`altoDosGrupos`, el par de grupos más alto; si no entra en la pantalla, achica filas de días `--hh` 32px, de totales
 `--trh` 14px y renglones `--rh` hasta 16px). Sin video/imagen de inicio (a pedido de Guillermo).
+Ícono propio (almanaque con casilleros de colores, franja bordó, fondo azul: `programar/icon-*.png`) y manifest con `id`
+propio, para no confundirla con la app de cajeros (que tiene el chaleco).
 En pantalla la fila de días de arriba no queda fija (`#gridCard .grid thead th{top:auto}`: confundía, los demás grupos
 parecían el grupo 1) y la ruedita salta de grupo en grupo (listener `wheel` sobre `#gridCard`; shift/ctrl/horizontal normal).
 Condicionales de grilla y totales apagados

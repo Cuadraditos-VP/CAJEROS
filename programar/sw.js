@@ -1,8 +1,8 @@
 // Service worker de Programar Cajeros: permite abrir la app sin internet.
 // La página siempre se pide primero a internet (así llegan las versiones nuevas); si no hay, se usa la copia guardada.
 // Solo cubre la carpeta programar/ (la app de cajeros tiene el suyo).
-const VERSION = "pcaj-v1.0";
-const ARCHIVOS = ["./", "./index.html", "./manifest.json", "../icon-192.png", "../icon-512.png", "../apple-touch-icon.png", "../favicon.png"];
+const VERSION = "pcaj-v1.1";
+const ARCHIVOS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil((async () => {

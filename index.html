@@ -7552,7 +7552,10 @@
     }
     function setDivisionUI() {
       document.body.classList.toggle("is-division", soyDivision());
+      // Si cambia la etapa, la vista D se vuelve a armar (en la 1 no muestra los acuerdos sin avalar)
+      const etapaAntes = document.body.classList.contains("div-sin-cambios");
       document.body.classList.toggle("div-sin-cambios", divSinCambios());
+      if (etapaAntes !== divSinCambios() && vistaD) { try { rebuildDMarks(); refreshAfterEdit(); } catch (e) {} }
       if (divSinCambios()) ["bancoOverlay", "pedidoOverlay", "acuerdosOverlay", "palabraOverlay"].forEach(id => {
         const el = document.getElementById(id); if (el) el.classList.remove("open");
       });

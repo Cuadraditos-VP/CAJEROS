@@ -8385,7 +8385,42 @@
       e.preventDefault();
       toggleDayFilter(Number(th.dataset.di));
     });
-    // Vista "por turno": deslizar hacia un costado vuelve a la grilla del mes
+    // En la vista de un día ("por turno"), un doble toque vuelve a la grilla del mes.
+    // Para distinguirlo del toque simple (que abre el abanico o el almanaque), el toque
+    // simple se aplica tras una pausa breve; si llega un segundo toque, se vuelve al mes.
+    (function () {
+      const split = document.getElementById("daySplit");
+      split.style.touchAction = "manipulation"; // sin zoom por doble toque
+      let pending = null;
+      split.addEventListener("click", (e) => {
+        if (selectedDay === null || e.__pasar) return;
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        if (pending) {
+          clearTimeout(pending);
+          pending = null;
+          document.getElementById("btnClearDay").click();
+          return;
+        }
+        const target = e.target;
+        pending = setTimeout(() => {
+          pending = null;
+          if (selectedDay === null) return;
+          const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
+          ev.__pasar = true;
+          target.dispatchEvent(ev);
+        }, 300);
+      }, true);
+    })();
+    // Vista "por turno": deslizar el dedo a los costados (en el celular) o las flechas ← → (en la PC)
+    // pasan al día siguiente o al anterior. Para volver al mes: doble toque, Escape o "Ver mes".
+    function irADia(d) {
+      if (selectedDay === null || !Number.isFinite(d)) return;
+      const nd = Math.max(0, Math.min(DAYS - 1, d));
+      if (nd === selectedDay) return;
+      selectedDay = nd;
+      refreshAfterEdit();
+    }
     (function () {
       const area = document.getElementById("daySplit");
       let sx = null, sy = null, st = 0;
@@ -8399,11 +8434,18 @@
         const dx = t.clientX - sx, dy = t.clientY - sy;
         sx = null;
         if (document.querySelector(".palette-overlay.open")) return;
-        if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.8 && Date.now() - st < 800) {
-          selectedDay = null;
-          refreshAfterEdit();
-        }
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && Date.now() - st < 900) irADia(selectedDay + (dx < 0 ? 1 : -1));
       }, { passive: true });
+      document.addEventListener("keydown", (e) => {
+        if (selectedDay === null || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "Escape") return;
+        const t = e.target;
+        if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+        if (document.querySelector('.palette-overlay.open, [id$="Overlay"].open, [id$="overlay"].open, .overlay.open')) return;
+        e.preventDefault();
+        if (e.key === "Escape") document.getElementById("btnClearDay").click();
+        else irADia(selectedDay + (e.key === "ArrowRight" ? 1 : -1));
+      });
     })();
     document.getElementById("btnClearDay").addEventListener("click", () => {
       selectedDay = null;

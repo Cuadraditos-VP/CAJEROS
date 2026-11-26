@@ -1622,10 +1622,11 @@ function chequear(nombre, cond, detalle) {
     {
       const PC = await be.celular(browser, URL, "uRueda", "guillermo.nemaric@gmail.com", errores);
       await PC.setViewportSize({ width: 1400, height: 800 }); await wait(2500);
+      await PC.evaluate(() => document.querySelectorAll('[id$="Overlay"].open, [id$="overlay"].open').forEach(o => o.classList.remove("open")));
       const datos = () => PC.evaluate(() => {
         const w = document.getElementById("scheduleWrap"), base = w.getBoundingClientRect().top - w.scrollTop;
         return { y: Math.round(w.scrollTop), max: w.scrollHeight - w.clientHeight, alto: w.clientHeight,
-          gs: [...document.querySelectorAll("#groupCards .grp-card")].map(c => { const r = c.getBoundingClientRect(); return { top: Math.round(r.top - base - 6), bot: Math.round(r.bottom - base) }; }) };
+          gs: [...w.querySelectorAll(".grp-card")].filter(c => c.offsetParent).map(c => { const r = c.getBoundingClientRect(); return { top: Math.round(r.top - base - 6), bot: Math.round(r.bottom - base) }; }) };
       });
       const d0 = await datos();
       if (d0.gs.length < 2 || d0.max < 20) chequear("(sin grupos suficientes para probar la ruedita)", true);
@@ -1639,6 +1640,11 @@ function chequear(nombre, cond, detalle) {
         chequear("bajando llega al final", pos[pos.length - 1] >= d0.max - 1, pos);
         for (let i = 0; i < d0.gs.length + 1; i++) { await PC.mouse.wheel(0, -100); await wait(700); }
         chequear("subiendo vuelve al principio", (await datos()).y === 0);
+        await PC.keyboard.press("ArrowDown"); await wait(700);
+        const yk = (await datos()).y;
+        chequear("con la flecha ↓ también salta al grupo siguiente", Math.abs(yk - Math.min(d0.max, d0.gs[1].top)) <= 1 || (d0.gs[0].bot - d0.gs[0].top > d0.alto && yk > 0), yk);
+        await PC.keyboard.press("ArrowUp"); await wait(700);
+        chequear("y con la flecha ↑ vuelve", (await datos()).y === 0);
       }
       await PC.close();
     }

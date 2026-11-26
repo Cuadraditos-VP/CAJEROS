@@ -9182,7 +9182,7 @@
       if (personOverlay.classList.contains("open") && currentCalPi !== null) openPersonCalendar(currentCalPi);
     });
 
-    // En la PC (no en el celular), la ruedita del mouse salta de grupo en grupo, sin parar en filas intermedias.
+    // En la PC (no en el celular), la ruedita del mouse y las flechas ↑ ↓ saltan de grupo en grupo, sin parar en filas intermedias.
     // Si un grupo no entra entero en la pantalla, primero se recorre hasta su final y después salta.
     (function () {
       const wrap = document.getElementById("scheduleWrap");
@@ -9209,17 +9209,9 @@
         bloqueoHasta = Infinity;
         anim = requestAnimationFrame(paso);
       }
-      wrap.addEventListener("wheel", (e) => {
-        if (!esPC() || e.ctrlKey || e.shiftKey || selectedDay !== null) return;
-        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || !e.deltaY) return;
-        const gs = topes();
-        if (gs.length < 2) return;
-        e.preventDefault();
-        const ahora = performance.now(), quieto = ahora - ultimaRueda > 180;
-        ultimaRueda = ahora;
-        // Mientras salta, y mientras siga llegando el envión del touchpad, no se cuenta otro salto
-        if (anim || (ahora - bloqueoHasta < 400 && !quieto)) return;
-        const y = wrap.scrollTop, alto = wrap.clientHeight, baja = e.deltaY > 0;
+      // Salta al grupo siguiente (baja) o al anterior
+      function saltar(gs, baja) {
+        const y = wrap.scrollTop, alto = wrap.clientHeight;
         const actual = gs.reduce((a, g, i) => (g.top <= y + 2 ? i : a), 0);
         const g = gs[actual];
         if (baja) {
@@ -9231,7 +9223,34 @@
           else if (actual > 0) { const p = gs[actual - 1]; irA(p.bot - p.top > alto ? p.bot - alto + 12 : p.top); }
           else irA(0);
         }
+      }
+      wrap.addEventListener("wheel", (e) => {
+        if (!esPC() || e.ctrlKey || e.shiftKey || selectedDay !== null) return;
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || !e.deltaY) return;
+        const gs = topes();
+        if (gs.length < 2) return;
+        e.preventDefault();
+        const ahora = performance.now(), quieto = ahora - ultimaRueda > 180;
+        ultimaRueda = ahora;
+        // Mientras salta, y mientras siga llegando el envión del touchpad, no se cuenta otro salto
+        if (anim || (ahora - bloqueoHasta < 400 && !quieto)) return;
+        saltar(gs, e.deltaY > 0);
       }, { passive: false });
+      // Lo mismo con las flechas ↑ ↓ y Re Pág / Av Pág (no mientras se escribe o hay una ventana abierta)
+      document.addEventListener("keydown", (e) => {
+        const k = e.key;
+        if (k !== "ArrowDown" && k !== "ArrowUp" && k !== "PageDown" && k !== "PageUp") return;
+        if (!esPC() || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey || selectedDay !== null || e.defaultPrevented) return;
+        const t = e.target;
+        if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+        if (document.querySelector('[id$="Overlay"].open, [id$="overlay"].open, .overlay.open')) return;
+        if (!wrap.offsetParent) return;
+        const gs = topes();
+        if (gs.length < 2) return;
+        e.preventDefault();
+        if (anim) return;
+        saltar(gs, k === "ArrowDown" || k === "PageDown");
+      });
     })();
 
     // Buscador de nombres (arriba a la izquierda, solo en PC): lleva a la fila de esa persona

@@ -219,14 +219,15 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   banco, Acordados y ticket, les dice solo "la División" (`nomDivVisible`, `laDivision`, `textoAutorizado`, `textoRechazo`).
   El nombre igual se guarda en Firebase (`por`, `pasadoPor`, `rechazo.por`, `publicadoPor`, historial).
   **Etapas** (a pedido de Guillermo, para arrancar de a poco): el admin elige en Celulares, en la fila de la División, el botón
-  "Etapa N" (cada toque avanza 1 → 2 → 3; campo `etapa` en `division_*`, sin campo = 3). 1: D e I, cambiar a mano, ⬆ Publicar,
-  Feriados y Colores (sin Cambios: ni banco, ni rayitas de pedidos, ni acuerdos sin avalar en D; tocar una celda la cambia a mano).
-  2: + Cambios (banco, Acordados, Pasar a lo oficial, Rechazar, Autorizar, Cambio de palabra). 3: + 🖨 Ticket. Solo esconde
+  "Etapa N" (cada toque avanza 1 → 2 → 3; campo `etapa` en `division_*`, sin campo = 3). 1 (de práctica): D e I, cambiar a mano,
+  Feriados y Colores, **sin ⬆ Publicar** (queda solo en esa PC) y sin Cambios (ni banco, ni rayitas de pedidos, ni acuerdos sin
+  avalar en D; tocar una celda la cambia a mano). 2: + ⬆ Publicar y Cambios (banco, Acordados, Pasar a lo oficial, Rechazar, Autorizar, Cambio de palabra). 3: + 🖨 Ticket. Solo esconde
   cosas en la PC de la División (`etapaDiv`, `divSinCambios`, `divSinTicket`, clase `div-sin-cambios`); admin y usuarios ven todo.
   **Lo avalado NO queda trabado** (a pedido de Guillermo, se sacó la traba): el dueño puede cambiar su turno, pedir
   cambio y responder "Me sirve" con las reglas de siempre, y la app no le menciona a la División.
   **Horas extra** (solo cajeros): en el almanaque de cada uno las ve esa persona, el admin y la División (`renderOtSummary`,
-  a pedido de Guillermo).
+  a pedido de Guillermo). En la vista D, "con cambios" sale de lo que muestra la grilla D (`codesInMonth` modo `"division"` →
+  `D_CODES`), no de lo que cada uno cambió en su fila.
 - **Uso de la app** (en Celulares, solo el admin): cada celular registrado suma 1 en su doc de `yo_*` (`ab`, y `ult` =
   última vez, y `disp` = aparato al día, para ver "(app)" aunque se haya registrado antes) al abrir la app o al volver a ella tras 30 min sin usarla (`contarApertura`); la recarga automática
   no cuenta (`sessionStorage` `recargaAuto`) y el admin no suma. "Sin usarla" se mide con la última vez que se la vio

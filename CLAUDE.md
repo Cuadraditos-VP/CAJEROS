@@ -70,6 +70,10 @@ errores de JavaScript. Si agregás algo importante, sumale una prueba (y copiala
   código de 6 cifras que vale 10 min (`pases_cajeros`); en la app se escribe con "Tengo un código de invitación" (`usarPase`):
   toma la reserva del legajo con `pase`, borra el `yo_*` de Safari y Safari se libera solo (`vigilarPase`/`paseHecho`).
   Reglas: `REGLAS-FIREBASE-PASES.md`.
+- **Legajos sin programación** (a pedido de Guillermo, para los de la División): en Celulares, "＋ Agregar legajo (sin programación)"
+  (`btnAgregarLeg`, `extrasList`, `startExtras`/`renderExtras`) agrega legajo + nombre a `padron_*` con `extra: true`. Entran con legajo y
+  clave como cualquiera (desde cualquier aparato o usuario de Windows), sin fila en la grilla, y el admin los hace División con 👑.
+  "Quitar" borra el doc del padrón (si está en la programación, solo le saca `extra`). No necesita reglas nuevas.
 - **Externos**: entran con un link de invitación del admin (Celulares → Invitar, colección
   `invitados_cajeros`). No reservan legajo, no tienen fila propia (no publican ni piden cambios).
   El código de la invitación es de 3 cifras (`codigoInvitacionLibre`, no repite uno existente; a pedido de Guillermo;

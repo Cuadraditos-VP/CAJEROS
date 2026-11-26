@@ -2568,6 +2568,9 @@
         const pi = people.findIndex(p => String(p.id) === String(id));
         if (pi < 0) return Array(info.days).fill("");
         let src = mode === "actual" ? people[pi].codes : (ORIGINAL_CODES[pi] || []);
+        // Vista D: lo mismo que muestra la grilla D (lo oficial, los cambios del banco que se ven y lo que se probó a mano en esta PC),
+        // no lo que cada cajero cambió en su fila (a pedido de Guillermo)
+        if (mode === "division") src = D_CODES[pi] || INITIAL_CODES[pi] || ORIGINAL_CODES[pi] || [];
         if (mode === "cj") {
           src = (ORIGINAL_CODES[pi] || []).slice();
           const cj = cjCambiosDe(key, id);
@@ -8621,7 +8624,7 @@
       const prog = overtimePeriod(id, "inicial");
       // En la vista CJ del admin, "con cambios" usa los cambios que mandaron los cajeros
       const enCj = viewMode === "cj";
-      const camb = overtimePeriod(id, enCj ? "cj" : "actual");
+      const camb = overtimePeriod(id, enCj ? "cj" : (viewMode === "division" ? "division" : "actual"));
       const delta = Math.round((camb.total - prog.total) * 100) / 100;
       const deltaTxt = delta === 0 ? "sin diferencia" : ((delta > 0 ? "+" : "") + fmtHoras(delta).replace(" h", "") + " h");
       const b = prog.bounds;

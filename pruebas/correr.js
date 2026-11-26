@@ -1618,7 +1618,7 @@ function chequear(nombre, cond, detalle) {
       await Promise.all([K1.close(), K2.close(), K3.close()]);
     }
 
-    console.log("\nRuedita del mouse en la PC: salta de grupo en grupo");
+    console.log("\nFlechas del teclado en la PC: saltan de grupo en grupo");
     {
       const PC = await be.celular(browser, URL, "uRueda", "guillermo.nemaric@gmail.com", errores);
       await PC.setViewportSize({ width: 1400, height: 800 }); await wait(2500);
@@ -1629,22 +1629,23 @@ function chequear(nombre, cond, detalle) {
           gs: [...w.querySelectorAll(".grp-card")].filter(c => c.offsetParent).map(c => { const r = c.getBoundingClientRect(); return { top: Math.round(r.top - base - 6), bot: Math.round(r.bottom - base) }; }) };
       });
       const d0 = await datos();
-      if (d0.gs.length < 2 || d0.max < 20) chequear("(sin grupos suficientes para probar la ruedita)", true);
+      if (d0.gs.length < 2 || d0.max < 20) chequear("(sin grupos suficientes para probar las flechas)", true);
       else {
         const box = await PC.locator("#scheduleWrap").boundingBox();
         await PC.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-        const pos = [];
-        for (let i = 0; i < d0.gs.length + 1; i++) { await PC.mouse.wheel(0, 100); await wait(700); pos.push((await datos()).y); }
-        const valido = y => y === d0.max || y === 0 || d0.gs.some(g => Math.abs(g.top - y) <= 1 || (g.bot - g.top > d0.alto && y > g.top && y < g.bot));
-        chequear("cada ruedita para al principio de un grupo (no en filas sueltas)", pos.every(valido) && Math.abs(pos[0] - Math.min(d0.max, d0.gs[1].top)) <= 1 || d0.gs[0].bot - d0.gs[0].top > d0.alto, { pos, d0 });
-        chequear("bajando llega al final", pos[pos.length - 1] >= d0.max - 1, pos);
-        for (let i = 0; i < d0.gs.length + 1; i++) { await PC.mouse.wheel(0, -100); await wait(700); }
-        chequear("subiendo vuelve al principio", (await datos()).y === 0);
+        await PC.mouse.wheel(0, 100); await wait(700);
+        const yr = (await datos()).y;
+        chequear("la ruedita del mouse se mueve normal (sin saltar de grupo)", yr > 0 && yr < d0.gs[1].top - 1, yr);
+        await PC.evaluate(() => { document.getElementById("scheduleWrap").scrollTop = 0; });
         await PC.keyboard.press("ArrowDown"); await wait(700);
         const yk = (await datos()).y;
-        chequear("con la flecha ↓ también salta al grupo siguiente", Math.abs(yk - Math.min(d0.max, d0.gs[1].top)) <= 1 || (d0.gs[0].bot - d0.gs[0].top > d0.alto && yk > 0), yk);
+        chequear("con la flecha ↓ salta al grupo siguiente", Math.abs(yk - Math.min(d0.max, d0.gs[1].top)) <= 1 || (d0.gs[0].bot - d0.gs[0].top > d0.alto && yk > 0), yk);
         await PC.keyboard.press("ArrowUp"); await wait(700);
         chequear("y con la flecha ↑ vuelve", (await datos()).y === 0);
+        await PC.keyboard.press("End"); await wait(500);
+        chequear("con Fin va abajo de todo", (await datos()).y >= d0.max - 1);
+        await PC.keyboard.press("Home"); await wait(500);
+        chequear("con Inicio va arriba de todo", (await datos()).y === 0);
       }
       await PC.close();
     }

@@ -9182,13 +9182,12 @@
       if (personOverlay.classList.contains("open") && currentCalPi !== null) openPersonCalendar(currentCalPi);
     });
 
-    // En la PC (no en el celular), la ruedita del mouse y las flechas ↑ ↓ saltan de grupo en grupo, sin parar en filas intermedias.
+    // En la PC (no en el celular), las flechas ↑ ↓ del teclado saltan de grupo en grupo, sin parar en filas intermedias.
     // Si un grupo no entra entero en la pantalla, primero se recorre hasta su final y después salta.
     (function () {
       const wrap = document.getElementById("scheduleWrap");
       if (!wrap) return;
       const esPC = () => window.matchMedia("(min-width: 1001px) and (pointer: fine)").matches;
-      let ultimaRueda = 0, bloqueoHasta = 0;
       function topes() {
         const base = wrap.getBoundingClientRect().top - wrap.scrollTop;
         return [...document.querySelectorAll("#groupCards .grp-card")]
@@ -9200,7 +9199,6 @@
         y = Math.max(0, Math.min(max, y));
         wrap.style.scrollBehavior = "auto";
         wrap.scrollTop = y;
-        bloqueoHasta = performance.now();
       }
       // Salta al grupo siguiente (baja) o al anterior
       function saltar(gs, baja) {
@@ -9217,22 +9215,10 @@
           else irA(0);
         }
       }
-      wrap.addEventListener("wheel", (e) => {
-        if (!esPC() || e.ctrlKey || e.shiftKey || selectedDay !== null) return;
-        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || !e.deltaY) return;
-        const gs = topes();
-        if (gs.length < 2) return;
-        e.preventDefault();
-        const ahora = performance.now(), quieto = ahora - ultimaRueda > 180;
-        ultimaRueda = ahora;
-        // Mientras salta, y mientras siga llegando el envión del touchpad, no se cuenta otro salto
-        if (ahora - bloqueoHasta < 400 && !quieto) return;
-        saltar(gs, e.deltaY > 0);
-      }, { passive: false });
-      // Lo mismo con las flechas ↑ ↓ y Re Pág / Av Pág (no mientras se escribe o hay una ventana abierta)
+      // Con las flechas ↑ ↓ y Re Pág / Av Pág; Inicio va arriba de todo y Fin abajo (no mientras se escribe o hay una ventana abierta). La ruedita del mouse queda normal.
       document.addEventListener("keydown", (e) => {
         const k = e.key;
-        if (k !== "ArrowDown" && k !== "ArrowUp" && k !== "PageDown" && k !== "PageUp") return;
+        if (k !== "ArrowDown" && k !== "ArrowUp" && k !== "PageDown" && k !== "PageUp" && k !== "Home" && k !== "End") return;
         if (!esPC() || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey || selectedDay !== null || e.defaultPrevented) return;
         const t = e.target;
         if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
@@ -9241,7 +9227,9 @@
         const gs = topes();
         if (gs.length < 2) return;
         e.preventDefault();
-        saltar(gs, k === "ArrowDown" || k === "PageDown");
+        if (k === "Home") irA(0);  // Inicio: arriba de todo
+        else if (k === "End") irA(wrap.scrollHeight);  // Fin: abajo de todo
+        else saltar(gs, k === "ArrowDown" || k === "PageDown");
       });
     })();
 

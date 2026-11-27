@@ -209,6 +209,13 @@
       color: #1e293b; font-size: 0.78rem; white-space: nowrap;
     }
     td.empty { background: #fafafa; color: #cbd5e1; cursor: default; }
+    /* Días sin programación: gris parejo en toda la columna (sin rayas entre filas) */
+    tbody td.cerrado,
+    .grp-card tbody td.cerrado {
+      background: #a3a3a3 !important; border-color: #a3a3a3 !important;
+      color: transparent; cursor: default; padding: 0;
+    }
+    tbody td.cerrado:hover { filter: none; }
     /* Comentario: puntito negro fijo (elemento hijo, no ::after, para no chocar con "editado") */
     td.has-comment,
     .cal-day,
@@ -2918,6 +2925,13 @@
     const LINEAS_EN_BLOQUES = ["LIC"];
     if (LINEAS_EN_BLOQUES.length) document.documentElement.classList.add("lineas-en-bloques");
 
+    // Días sin programación (a pedido de Guillermo): toda la columna va de un gris parejo, sin turnos ni toques
+    // (salvo LAO y LIC, que se ven encima). Días del mes (1, 2, …). Diciembre 2026: 24, 25 y 31.
+    const DIAS_CERRADOS_BY_MES = { "2026-12": [24, 25, 31] };
+    function esDiaCerrado(di) { return (DIAS_CERRADOS_BY_MES[currentMes] || []).includes(di + 1); }
+    const PASAN_SOBRE_CERRADO = ["LAO", "LIC"];
+    function tapaCerrado(code) { return PASAN_SOBRE_CERRADO.includes(String(code || "").toUpperCase()); }
+
     // La fila de quien usa el celular se resalta (el admin no tiene fila propia)
     function esMiFila(person) {
       return !!miLegajo && currentUser !== "ADMIN" && String(person.id) === String(miLegajo);
@@ -2935,6 +2949,16 @@
       let di = 0;
       while (di < codesArr.length) {
         if (onlyDay && di !== selectedDay) { di++; continue; }
+        if (esDiaCerrado(di) && !tapaCerrado(codesArr[di])) {
+          // Sin data-pi: no abre nada al tocarla
+          const c = document.createElement("td");
+          c.dataset.di = String(di);
+          c.className = "cerrado";
+          if (onlyDay) c.classList.add("day-only");
+          tr.appendChild(c);
+          di++;
+          continue;
+        }
         const code = codesArr[di];
         const upperCode = code ? code.toUpperCase() : "";
         const isBlock = code && BLOCK_CODES.includes(upperCode);
@@ -2947,6 +2971,7 @@
           while (
             runEnd + 1 < codesArr.length &&
             codesArr[runEnd + 1] &&
+            (!esDiaCerrado(runEnd + 1) || tapaCerrado(upperCode)) &&
             codesArr[runEnd + 1].toUpperCase() === upperCode
           ) {
             runEnd++;

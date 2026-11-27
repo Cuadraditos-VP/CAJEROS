@@ -2330,9 +2330,12 @@
     const FIRST_MES = "2026-10";
     const DEFAULT_SHIFT_CODES = ["MD","MS","T3","T","TE","N","E1","E","X","F","LAO"];
     // Orden de los turnos en los selectores (a pedido de Guillermo). Los que no están acá van al final.
+    // Turnos que se muestran con otro código (a pedido de Guillermo: todo lo que diga 14F va como C/A)
+    const CODIGO_REEMPLAZO = { "14F": "C/A" };
     const ORDEN_TURNOS = ["MD","MS","T3","T","TE","N","E","E1","X","F","14F","DV","LAO","10A","10J","C/A","LIC"];
     function ordenarTurnos(list) {
       const pos = c => { const i = ORDEN_TURNOS.indexOf(c); return i < 0 ? ORDEN_TURNOS.length : i; };
+      list = list.filter((c, i) => list.indexOf(c) === i);
       return list.map((c, i) => [c, i]).sort((a, b) => pos(a[0]) - pos(b[0]) || a[1] - b[1]).map(x => x[0]);
     }
 
@@ -2764,6 +2767,7 @@
       "T1": "#F5F5DC",
       "14F": "#FF6B6B",
       "LIC": "#A9B4F5",
+      "C/A": "#374151",
       "FC": "#ffe0b2",
       "DV": "#cccccc"
     };
@@ -3228,7 +3232,8 @@
     }
     function normCode(c) {
       if (c == null || c === "") return "";
-      return String(c).trim().toUpperCase();
+      const u = String(c).trim().toUpperCase();
+      return CODIGO_REEMPLAZO[u] || u;
     }
     function normalizePeople(list, days) {
       const nDays = days || DAYS;
@@ -3249,11 +3254,13 @@
       }
       if (data.colores && typeof data.colores === "object") {
         Object.keys(data.colores).forEach(k => {
+          if (CODIGO_REEMPLAZO[String(k).trim().toUpperCase()]) return; // el color de 14F no pisa el de C/A
           colorMap[normCode(k)] = data.colores[k];
         });
       }
       if (data.letras && typeof data.letras === "object") {
         Object.keys(data.letras).forEach(k => {
+          if (CODIGO_REEMPLAZO[String(k).trim().toUpperCase()]) return;
           if (data.letras[k]) textMap[normCode(k)] = data.letras[k];
         });
       }
@@ -3582,7 +3589,7 @@
     let pedFrancoMode = false;
     let pedFrancosSel = [];
     let pedAceptaSel = [];
-    const NO_TRABAJA = ["", "F", "LAO", "LIC", "DV", "FC", "14F", "BLOQ"];
+    const NO_TRABAJA = ["", "F", "LAO", "LIC", "DV", "FC", "14F", "C/A", "BLOQ"];
     function trabaja(code) { return NO_TRABAJA.indexOf(String(code || "").toUpperCase()) < 0; }
     // Lo que acepta un pedido a cambio (puede ser varias cosas). "*" = cualquier turno.
     // Los pedidos viejos solo tienen "quiere".
@@ -4970,7 +4977,7 @@
     function propCode(mes, id, di) {
       const d = propDe(mes, id);
       const e = d && d.edits;
-      return e && Object.prototype.hasOwnProperty.call(e, "d" + di) ? String(e["d" + di] || "") : null;
+      return e && Object.prototype.hasOwnProperty.call(e, "d" + di) ? normCode(e["d" + di]) : null;
     }
     // Quien no eligió su nombre ("¿Quién sos?") no ve los cambios que publicaron los demás:
     // ve la programación oficial y solo lo que él cambió en su celular. El admin ve todo.
@@ -4990,7 +4997,7 @@
           // Lo que el dueño publicó ANTES del acuerdo no tapa el acuerdo (su celular todavía no lo cargó)
           const ta = tAcu[p.id + ":" + di];
           if (ta && (Number((d.t || {})[k]) || Number(d.updated) || 0) < ta) return;
-          if (di >= 0 && di < p.codes.length) p.codes[di] = String(d.edits[k] || "");
+          if (di >= 0 && di < p.codes.length) p.codes[di] = normCode(d.edits[k]);
         });
       });
     }
@@ -5005,7 +5012,7 @@
         const i = key.lastIndexOf(":"), id = key.slice(0, i), di = Number(key.slice(i + 1));
         const p = people.find(q => String(q.id) === id);
         if (!p || di >= p.codes.length) return;
-        p.codes[di] = ac[key].code;
+        p.codes[di] = normCode(ac[key].code);
         out[key] = ac[key].t;
         ACU_CELDAS[key] = ac[key].code;
       });
